@@ -134,7 +134,9 @@ Dedicated per-pass app tasks are an optional host setup, not a repository regist
 
 ## GitHub Pages And Privacy
 
-The public site is generated in `docs/` and served from `main:/docs`. Every `npm run portal` rebuilds all configured destination pages in the shared theme. Scheduled workflows run `npm run pages:sync` afterward to commit and push only changed `docs/` pages. The sync is limited to `main`, the configured remote and `docs/`; it never stages `local/`, force-pushes or commits unrelated work. It requires SSH authorization in the task runtime.
+The public site is generated in `docs/` and served from `main:/docs`. Every `npm run portal` rebuilds all configured destination pages in the shared theme. Scheduled workflows run `npm run pages:sync` afterward to commit and push only changed generated `docs/` pages. The sync is limited to `main`, the configured remote and `docs/`; it never stages `local/`, force-pushes or commits unrelated work. It requires SSH authorization in the task runtime.
+
+`docs/todo.html` and `docs/todo.md` are explicitly allowed user-maintained files. The builder preserves them, and automatic sync excludes their changes from staging and commits, including changes you already staged. Publish edits to those files manually after checking their public content. Other unexpected files and all symlinks still block sync; do not add manual files to the generated-pages manifest.
 
 The public site automatically includes validated destination research through the privacy-safe projection, including provisional reviews and estimate-only options. Personal dates, home airports, document/employment assessments, budgets, party costs, booking evidence, reviewer internals and raw private artifacts stay excluded. Standing user authorization replaces per-run public-release approval. Publishing does not grant clean reviewer approval or booking readiness.
 

@@ -12,6 +12,9 @@ const generatedFile = /^(destinations\/[a-f0-9]{16}\.html|destinations\/[a-z0-9-
 const mediaFile = /^media\/[a-z0-9-]+\.(jpg|png|webp)$/;
 const sectionImageName = /^[a-z0-9-]+\.(jpg|png|webp)$/;
 
+// These user-maintained files may coexist with generated pages but are never auto-published.
+export const manualPagesFiles = ['todo.html', 'todo.md'];
+
 function readJson(filename) {
   return JSON.parse(fs.readFileSync(filename, 'utf8'));
 }
@@ -158,7 +161,7 @@ export function validateGeneratedPages(workspace = project) {
       }
     };
     visit(directory);
-    return { valid: actual.size === expected.size && [...actual].every(file => expected.has(file)) };
+    return { valid: [...expected].every(file => actual.has(file)) && [...actual].every(file => expected.has(file) || manualPagesFiles.includes(file)) };
   } catch {
     return { valid: false };
   }

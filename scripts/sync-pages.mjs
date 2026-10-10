@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process';
 import { mkdirSync, rmSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { buildPages, validateGeneratedPages } from './build-pages.mjs';
+import { buildPages, validateGeneratedPages, manualPagesFiles } from './build-pages.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const runGit = (...args) => execFileSync('git', args, { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
@@ -19,14 +19,15 @@ export function syncPages(repository = root) {
   try {
     buildPages(repository);
     if (!validateGeneratedPages(repository).valid) throw new Error('Pages sync refused unexpected or untracked content under docs');
-    git('add', '--', 'docs');
+    const generatedPaths = ['docs', ...manualPagesFiles.map(file => `:(exclude)docs/${file}`)];
+    git('add', '--', ...generatedPaths);
     let changes;
-    try { git('diff', '--cached', '--quiet', '--', 'docs'); changes = false; } catch (error) {
+    try { git('diff', '--cached', '--quiet', '--', ...generatedPaths); changes = false; } catch (error) {
       if (error.status !== 1) throw error;
       changes = true;
     }
     if (!changes) return { published: false, reason: 'No sanitized Pages changes' };
-    git('commit', '--only', '-m', 'Publish sanitized GitHub Pages', '--', 'docs');
+    git('commit', '--only', '-m', 'Publish sanitized GitHub Pages', '--', ...generatedPaths);
     git('push', 'origin', 'HEAD:main');
     return { published: true, branch: 'main', directory: 'docs' };
   } finally { rmSync(lock, { recursive: true, force: true }); }

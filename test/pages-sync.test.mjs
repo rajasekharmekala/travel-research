@@ -24,6 +24,8 @@ test('Pages sync rebuilds sanitized docs, pushes docs-only commits, and preserve
     git(repository, 'config', 'user.name', 'Pages Test');
     git(repository, 'config', 'user.email', 'pages-test@example.invalid');
     fs.writeFileSync(path.join(repository, 'application.txt'), 'baseline');
+    fs.writeFileSync(path.join(repository, 'docs/todo.html'), 'manual HTML baseline');
+    fs.writeFileSync(path.join(repository, 'docs/todo.md'), 'manual Markdown baseline');
     git(repository, 'add', 'docs', 'application.txt');
     git(repository, 'commit', '-m', 'fixture baseline');
     git(repository, 'remote', 'add', 'origin', remote);
@@ -32,6 +34,9 @@ test('Pages sync rebuilds sanitized docs, pushes docs-only commits, and preserve
     fs.writeFileSync(path.join(repository, 'local/trip.json'), JSON.stringify({ coreHoliday: { start: 'PRIVATE-DATE' }, destinations: [{ name: 'Updated public name', airports: ['PRIVATE-AIRPORT'] }] }));
     fs.writeFileSync(path.join(repository, 'application.txt'), 'unrelated staged edit');
     git(repository, 'add', 'application.txt');
+    fs.writeFileSync(path.join(repository, 'docs/todo.html'), 'unstaged manual HTML edit');
+    fs.writeFileSync(path.join(repository, 'docs/todo.md'), 'staged manual Markdown edit');
+    git(repository, 'add', 'docs/todo.md');
     const result = syncPages(repository);
     assert.equal(result.published, true);
     const committedFiles = git(repository, 'diff-tree', '--no-commit-id', '--name-only', '-r', 'HEAD').split('\n').filter(Boolean);
@@ -40,10 +45,20 @@ test('Pages sync rebuilds sanitized docs, pushes docs-only commits, and preserve
     assert.equal(git(remote, 'show', 'main:docs/index.html').includes('Updated public name'), true);
     assert.equal(git(remote, 'show', 'main:docs/index.html').includes('PRIVATE-'), false);
     assert.match(git(repository, 'status', '--short'), /application\.txt/);
+    assert.equal(git(remote, 'show', 'main:docs/todo.html'), 'manual HTML baseline');
+    assert.equal(git(remote, 'show', 'main:docs/todo.md'), 'manual Markdown baseline');
+    assert.equal(fs.readFileSync(path.join(repository, 'docs/todo.html'), 'utf8'), 'unstaged manual HTML edit');
+    assert.equal(git(repository, 'show', ':docs/todo.md'), 'staged manual Markdown edit');
     assert.equal(syncPages(repository).published, false);
+    assert.equal(git(repository, 'show', ':docs/todo.md'), 'staged manual Markdown edit');
 
     const remoteHead = git(remote, 'rev-parse', 'main');
     fs.writeFileSync(path.join(repository, 'docs/unlisted.txt'), 'must not publish');
+    assert.throws(() => syncPages(repository), /unexpected or untracked content/);
+    assert.equal(git(remote, 'rev-parse', 'main'), remoteHead);
+    fs.rmSync(path.join(repository, 'docs/unlisted.txt'));
+    fs.rmSync(path.join(repository, 'docs/todo.html'));
+    fs.symlinkSync('../application.txt', path.join(repository, 'docs/todo.html'));
     assert.throws(() => syncPages(repository), /unexpected or untracked content/);
     assert.equal(git(remote, 'rev-parse', 'main'), remoteHead);
   } finally { fs.rmSync(temp, { recursive: true, force: true }); }
