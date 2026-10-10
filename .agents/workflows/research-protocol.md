@@ -1,6 +1,6 @@
 # Staged Travel Research Protocol
 
-Read AGENTS.md, local/trip.json, local/automation.json, and .agents/config/reviewer.json. Scheduled travel tasks must never access portfolio or the personal wiki. This workflow borrows architecture, not runtime dependencies, from portfolio.
+Read `AGENTS.md`, `local/trip.json`, this workflow, the assigned skill, and `.agents/config/reviewer.json` when review is required. Model selection, schedule, and execution mode come from the actual host task invocation; `local/automation.json` is not required or used.
 
 ## Durable Lifecycle
 
@@ -24,6 +24,10 @@ Write local/runs/<run-id>/checkpoint.json:
 ```
 
 Run `node scripts/research.mjs checkpoint local/runs/<run-id>/checkpoint.json`. The command validates the entire draft, computes actual file hashes and saves awaiting_review. For a blocker use outcome blocked, blocker {reason,evidence,nextAction}, and future ISO retryAfter. Do not set approved manually.
+
+## Review Dispatch Gate
+
+After saving and validating a draft, attempt the exact reviewer deployment in independent host-supported contexts for all configured passes. Do not infer dispatch unavailability from missing registration metadata, null reviewer lists, or a missing automation file. Record actual invocation evidence. If this runtime exposes no dispatch mechanism or the calls fail, record the concrete capability/error evidence and missing passes, then retain the draft as awaiting review. Invoke dedicated reviewer tasks only when the host confirms they are registered. Never fabricate a dispatch, receipt, model identity, or approval.
 
 ## Research Boundaries
 
@@ -49,7 +53,7 @@ New destinations are proposals, not silent trip edits. Record name, rationale, t
 
 ## Public Pages Sync
 
-After a checkpoint, promotion or comparison publication, run `npm run portal` and then `npm run pages:sync`. The public builder exports destination names and credited local imagery only, not the private dossier or trip settings. The sync script is constrained to branch `main`, the configured origin and paths under `docs/`; it makes a docs-only commit and a non-force push. A push conflict is an error; do not force push, reset or include `local/`. Scheduled runtimes must have the user's normal Git SSH authorization. The corporate Pages URL may require Adobe Okta authentication. If sync cannot authenticate or push, preserve the local sanitized docs output and disclose it was not synced.
+After every completed checkpoint/review execution, run `npm run portal` then `npm run pages:sync`. The public builder automatically exports structurally valid, current-checkpoint destination research through the shared privacy-safe projection, including estimate-only and provisional dossiers. No per-run public-release approval or observed all-in offer is needed for visibility. Publication is separate from clean reviewer approval and booking readiness. Preserve genuine review outcomes, unresolved findings, price evidence/freshness, qualitative confidence and conditional value assessments, and a prioritized user action plan. Personal dates, home airports, document assessments, party costs, evidence files and reviewer internals stay private. Invalid artifacts and privacy failures block export.
 
 ## Mandatory Automation Sync
 

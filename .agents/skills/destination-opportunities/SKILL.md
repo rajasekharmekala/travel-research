@@ -14,3 +14,5 @@ Run scripts/research.mjs propose <run/proposal.json>. Show proposals separately 
 ## Mandatory Publication Handoff
 
 After proposing or accepting a location, run `npm run portal` and `npm run pages:sync` before completing. Only the sanitized public location index is pushed; proposal rationale and research remain private unless separately released.
+
+When an accepted proposal enters a research workflow, the destination researcher must attempt genuine inline reviewer dispatch after validation. Do not treat null reviewer metadata or unregistered dedicated tasks alone as proof dispatch is unavailable; record concrete runtime evidence if it cannot be invoked.

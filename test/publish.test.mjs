@@ -9,6 +9,7 @@ import { reconcile, destinationId, digest } from '../scripts/research-store.mjs'
 import { applyReviewPolicy } from '../scripts/review-policy.mjs';
 import { readArtifact, promoteDestination, validateComparisonInputs } from '../scripts/research-artifacts.mjs';
 import { claimDestination, checkpointDestination, recordReviewRound } from '../scripts/research-store.mjs';
+import { buildPages } from '../scripts/build-pages.mjs';
 
 const now = new Date('2026-10-09T12:00:00Z');
 const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'travel-publish-test-'));
@@ -109,12 +110,13 @@ test('observed quotes reject one adult, wrong hotel dates and excluded fees', ()
     assert.throws(() => validate(draft, config, trip, directory, now), /Observed/);
   }
 });
-test('full coverage accountability and estimate-only publication are enforced', () => {
+test('full coverage accountability and honest estimate-only publication are enforced', () => {
   const incomplete = report(); incomplete.destinationChecks = [];
   assert.throws(() => validate(incomplete, config, trip, directory, now), /ledger/);
   const lead = report(); lead.candidates[0].priceType = 'estimate'; lead.destinationChecks[0].status = 'lead';
   validate(lead, config, trip, directory, now);
-  assert.throws(() => validateReviews(receipts('hash'), config, lead, 'hash'), /Estimate-only/);
+  assert.doesNotThrow(() => validateReviews(receipts('hash'), config, lead, 'hash', 'test-evidence-hash'));
+  assert.throws(() => validateReviews([], config, lead, 'hash', 'test-evidence-hash'), /approval/);
 });
 
 test('review evidence must match the reviewed capture', () => {
@@ -239,7 +241,7 @@ test('historical dossiers remain usable but comparison prices remain short-lived
 });
 
 test('comparison revalidates approved dossier receipts and detects changed evidence end to end', () => {
-  const local = fs.mkdtempSync(path.join(os.tmpdir(), 'travel-artifact-flow-'));
+  const local = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'travel-artifact-flow-')));
   try {
     const run = path.join(local, 'runs/synthetic');
     fs.mkdirSync(path.join(run, 'review'), { recursive: true });
@@ -255,6 +257,24 @@ test('comparison revalidates approved dossier receipts and detects changed evide
     const state = reconcile(null, trip);
     const record = claimDestination(state, { runId: 'synthetic', now: now.toISOString() });
     checkpointDestination(state, { id: record.id, token: record.lease.token, runId: 'synthetic', outcome: 'awaiting_review', artifact, now: now.toISOString() });
+    const publicWorkspace = fs.mkdtempSync(path.join(os.tmpdir(), 'travel-public-artifact-'));
+    try {
+      fs.cpSync(local, path.join(publicWorkspace, 'local'), { recursive: true });
+      fs.rmSync(path.join(publicWorkspace, 'local/runs/synthetic/review/source.review.json'));
+      fs.mkdirSync(path.join(publicWorkspace, 'local/research'), { recursive: true });
+      fs.mkdirSync(path.join(publicWorkspace, '.agents/config'), { recursive: true });
+      fs.writeFileSync(path.join(publicWorkspace, 'local/trip.json'), JSON.stringify(trip));
+      fs.writeFileSync(path.join(publicWorkspace, 'local/automation.json'), JSON.stringify(config));
+      fs.writeFileSync(path.join(publicWorkspace, 'local/research/state.json'), JSON.stringify(state));
+      fs.writeFileSync(path.join(publicWorkspace, '.agents/config/reviewer.json'), JSON.stringify(policy));
+      assert.equal(buildPages(publicWorkspace).publicAssessments, 1);
+      const publicPage = fs.readFileSync(path.join(publicWorkspace, 'docs/destinations', `${record.id}.html`), 'utf8');
+      assert.match(publicPage, /Your Action Plan/);
+      assert.match(publicPage, /Provisional research/);
+      assert.equal(publicPage.includes('local/runs'), false);
+      fs.writeFileSync(path.join(publicWorkspace, 'local/runs/synthetic/hotel.txt'), 'CHANGED EVIDENCE');
+      assert.throws(() => buildPages(publicWorkspace), /checkpoint/);
+    } finally { fs.rmSync(publicWorkspace, { recursive: true, force: true }); }
     recordReviewRound(state, { id: record.id, draftSha256: artifact.draftSha256, evidenceSha256: artifact.evidenceSha256, round: 1, attempts: policy.passes.map(role => ({ role, status: 'approve', evidence: 'SYNTHETIC receipt' })) }, 4);
     artifact = readArtifact(local, filename, settings, trip, { reviewed: true, now });
     promoteDestination(state, artifact, settings, now);

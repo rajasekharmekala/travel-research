@@ -76,7 +76,6 @@ export function evidenceHash(report, directory) {
 }
 import { applyReviewPolicy, validateBestEffort, validateCoverage } from './review-policy.mjs';
 export function validateReviews(receipts, config, report, draftHash, capturedEvidenceHash, trip) {
-  if (!report.candidates.some(candidate => candidate.priceType === 'observed')) throw new Error('Estimate-only research stays a lead draft; no ranked report publication');
   for (const role of config.reviewPolicy?.passes ?? ['source', 'value']) {
     const receipt = receipts.find(item => item.role === role);
     const settings = config.reviewers[role];
@@ -133,7 +132,6 @@ async function main() {
   });
   let bestEffort = null;
   if (action === 'publish-best-effort') {
-    if (!report.candidates.some(candidate => candidate.priceType === 'observed')) throw new Error('Estimate-only research cannot publish best effort');
     bestEffort = validateBestEffort(JSON.parse(fs.readFileSync(path.join(reviewDirectory, 'state.json'))), policy, hash(bytes), evidenceHash(report, directory));
   } else {
     validateReviews(receipts, config, report, hash(bytes), evidenceHash(report, directory), trip);

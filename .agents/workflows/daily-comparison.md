@@ -1,8 +1,6 @@
 # Daily Browser Comparison
 
-Paste into a separate DAILY Copilot app automation with this project as working directory:
-
-Read AGENTS.md, local/trip.json, local/automation.json, and .agents/workflows/review.md. Record configuredModel from the explicit configuration; actual model is separate and may be null with modelEvidence: null and the exact limitation `Actual researcher model identity is unverified; configured model is not runtime proof.` A known mismatch blocks research. Missing model identity or independent reviewer availability does not block saving research drafts.
+Read `AGENTS.md`, `local/trip.json`, and `.agents/workflows/review.md`. Get configured researcher model and execution mode from the actual host invocation; do not require `local/automation.json`.
 
 Create local/runs/<timestamp>-comparison. Prefer a fresh private context with supported browser-control or runtime-context evidence. If unavailable, the private configuration explicitly authorizes regular browser canvas; do NOT block solely because isolation cannot be verified. Record browser as {"privateContextVerified":false,"verificationMethod":"regular-canvas","isolation":"unknown","isolationEvidence":null,"safeguards":{"noLogin":true,"noAccountAccess":true,"noProfileInspection":true,"stopOnAuthentication":true}} and add the exact limitation `Regular browser canvas used; cookie and login isolation are unknown.` Never imply incognito. Use only public pages, do not inspect profiles, accounts, saved bookings, credentials, or personal content, and stop a source if continuing requires authentication/account access. No login, purchase, or bot-defense bypass. Record executionMode as interactive, scheduled, or unknown for this actual run.
 
@@ -18,8 +16,10 @@ Verify rendered TWO-adult flight and exact-date TWO-guest room controls. Do not 
 
 ## Current Review Policy
 
-Read .agents/config/reviewer.json and review.md after validating the draft. Four independent Qwen passes and four complete rounds maximum replace earlier source/value-only rules. Record real attempts and unresolved findings. All four current approvals yield approved output. Evidenced reviewer unavailability or exhausted rounds may yield separately labeled NOT APPROVED best effort only under mandatory validation and no unresolved critical/high issues. Insufficient observed quote evidence stays a lead, not a report. No configured model or file alone proves that an actual review ran.
+Read `.agents/config/reviewer.json` and `review.md` after validating the draft. Four independent Qwen passes and four complete rounds maximum replace earlier source/value-only rules. Record real attempts and unresolved findings. All four current approvals yield approved output. Evidenced reviewer unavailability or exhausted rounds may yield separately labeled NOT APPROVED best effort only under mandatory validation and no unresolved critical/high issues. Insufficient observed quote evidence stays a lead, not a report. No configured model or file alone proves that an actual review ran.
 
 ## Mandatory Completion Gate
 
 The top-level comparison run finishes with `npm run portal` followed by `npm run pages:sync`, including partial, blocked, or no-change runs. Verify success/no changes; if sync fails, report the exact failure and do not claim publication. Only generated `docs/` may be committed/pushed.
+
+After validation, attempt genuine inline reviewer dispatch using the exact deployment in `.agents/config/reviewer.json`, with a distinct fresh context for each pass. Do not infer inline unavailability solely from missing task registrations or null metadata. Record actual invocation evidence; if dispatch is unavailable, retain the draft pending and record the concrete limitation.

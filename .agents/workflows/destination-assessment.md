@@ -1,13 +1,17 @@
 # Destination Assessment Automation
 
-Read AGENTS.md, local/trip.json, local/automation.json, research-protocol.md and `.agents/skills/destination-research/SKILL.md`. This is the discovery job's staged replacement. Do not execute broad daily-discovery in parallel unless explicitly assigned; it remains a legacy report contract reference.
+Read AGENTS.md, `local/trip.json`, `research-protocol.md`, `.agents/config/reviewer.json`, and `.agents/skills/destination-research/SKILL.md`. Get researcher model selection and execution mode from the actual host invocation; do not require `local/automation.json` or infer runtime routing from a model setting.
 
 1. Record actual execution mode, configured model and runtime identity evidence without inventing routing. Check browser consent and safeguards.
 2. Run `node scripts/research.mjs claim <unique-run-id>`. Process one destination per run, thoroughly; repeated runs progress through all configured locations. Do not choose only favorites or mark skipped locations researched.
 3. Save exact-date two-traveler quotes, official documents and regional seasonal evidence, alternatives, full itinerary, costs and reasoned verdict in local/runs/<run-id>/draft.json. Use destination dossier schema and template; explain all origin/date-window exclusions. Save section evidence continuously.
 4. Run `node scripts/publish.mjs validate <run/draft.json>` and checkpoint through scripts/research.mjs. Source failure becomes an evidenced blocker with next action and retry date; retain partial research. Never invent a quote to unblock validation.
-5. Dispatch travel-review only if actual separate configured reviewer contexts are supported. Otherwise retain awaiting_review and record evidenced availability limitations; use independently registered review tasks if the host supports them. Record review rounds, feedback and changed hashes. No self-review or fabricated approvals.
+5. After validation, attempt genuine inline dispatch of the exact configured reviewer deployment for each independent pass using the host-supported reviewer mechanism. Do not skip this attempt because reviewer-task registration is false or an automation field is null. Capture actual dispatch results and model/context evidence. If no dispatch mechanism is exposed or an invocation fails, record the concrete capability/error evidence and missing passes, then leave the dossier awaiting review. Use dedicated app tasks only when their registration is confirmed; do not claim that a prompt registered them. Never self-review or fabricate attempts, receipts, or approvals.
 6. Promote only after genuine four-pass approval. Rebuild `node scripts/portal.mjs` after checkpoint, status changes and promotion. Report location, verdict, pending reviews, next action and actual limitations.
+
+## Required Decision Support
+
+Every validated destination dossier must be published through the public-safe Pages projection after the review attempt, whether estimate-only, awaiting review or cleanly reviewed. Do not equate visibility with promotion or booking clearance. Provide alternatives and day-by-day itineraries, explained qualitative confidence and conditional value ratings, source/freshness limitations and reviewer findings, and a prioritized user action plan with checks and what outcomes change the assessment. Unsupported facts remain omitted or qualified. Keep private trip details in the local portal; finish with npm run portal and npm run pages:sync, and verify the push.
 
 If no destination is eligible, inspect `node scripts/research.mjs status` for pending reviews and blockers. Continue only genuine supported work. Analysis refreshes after 30 days or meaningful changes; quotes are historical after 24 hours. Do not reprice every approved dossier every day solely to keep it in the analysis ledger.
 

@@ -1,10 +1,14 @@
 # Configurable Independent Review
 
-Read `.agents/config/reviewer.json` as the SINGLE owner of model, passes, round cap, output directory, and failure policy. Read local/automation.json only for researcher and browser settings. Use the exact configured Qwen deployment ID; do not infer aliases or silently substitute a model. A config file records intent, not a successful dispatch. Independent reviewer sessions may be host child agents or separate app tasks, but must actually run. The researcher never writes approval receipts or impersonates a reviewer.
+Read `.agents/config/reviewer.json` as the sole owner of reviewer model, passes, round cap, output directory, and failure policy. Read researcher model and execution mode from the actual host invocation; do not require `local/automation.json`. A configured model or task-registration flag is not evidence that dispatch occurred.
+
+## Required Dispatch Attempt
+
+For every structurally valid draft, first inspect the current host's available reviewer-dispatch mechanism and attempt the exact configured deployment in four distinct fresh contexts, one per configured role. Do not skip this attempt because a `reviewers` field is null or dedicated tasks are unregistered. Record the real invocation outcome and host-exposed model/context evidence. Mark a reviewer unavailable only after a concrete failed invocation or evidence that this runtime exposes no reviewer-dispatch mechanism. Use dedicated app tasks only if they are already confirmed registered; a prompt cannot register them. Never imply an attempt occurred if no invocation was made.
 
 ## Before Review
 
-Save and run structural quote validation: `node scripts/publish.mjs validate local/runs/<run>/draft.json`. Validation is mandatory even for best effort. Estimate-only drafts stay unverified leads and cannot publish ranked comparisons. Unknown actual researcher identity is disclosed; it is not proof that the configured model ran. The approved regular-browser safeguards apply to public review checks. No login, purchase, account/profile access or authentication continuation.
+Save and run structural validation: `node scripts/publish.mjs validate local/runs/<run>/draft.json`. Validation is mandatory. Estimate-only options can be published as research with low price confidence and conditional value assessments, never as observed all-in offers. Independent review clearance, public visibility and booking readiness are separate. Unknown researcher identity remains disclosed; configuration is not runtime proof. Keep browser safeguards; no login, purchase or account/profile access.
 
 Create `<RUN_DIR>/review/`. Calculate draftSha256 with `shasum -a 256 <draft.json>`. Calculate evidenceSha256:
 
@@ -62,9 +66,9 @@ A pass with unresolved critical/high issues must reject. Do not turn a review's 
 ## Publication Outcomes
 
 - Approved: all four independent passes approve the same current draft/evidence with actual model evidence. `node scripts/publish.mjs publish <draft.json>` creates report.html and the job's approved latest page.
-- Reviewer unavailable: preserve actual capability/dispatch failure evidence and missing passes. Best effort is permitted by policy only with current valid observed quotes and explicit disclosure. Never claim reviews occurred.
-- Four-round cap exhausted: revalidate final repairs, preserve the review history and unresolved findings. Best effort is permitted only after the cap and never with unresolved critical/high issues.
-- Invalid quotes, serious unresolved findings, or no defensible observed option: retain the draft/lead or blocked status; best effort does not bypass these gates.
+- Reviewer unavailable: preserve actual dispatch/capability evidence and missing passes. Automatically publish validated privacy-safe research provisionally, with explicit disclosure. Never claim reviews occurred.
+- Four-round cap exhausted: preserve the review history and findings. Provisional Pages visibility is independent of policy-approved best-effort or clean approval outputs.
+- Invalid artifacts or privacy leaks: block export. Serious findings and missing observed offers restrict recommendations, not visibility of honestly qualified research. Preserve findings and the user's action plan; never present unresolved unsafe options as ready to book.
 
 Best effort requires `review/state.json` with current draftSha256, evidenceSha256, validatorPassed:true, reasonCode (reviewer_unavailable or round_limit), reason, roundsCompleted (0-4), missingPasses, attempts [{status,evidence}], unresolvedFindings [{severity,message}]. Missing reviews are uncertainty, not evidence that there are no problems. Preserve known findings and disclose partial completed passes even if the final revision invalidated their receipts.
 

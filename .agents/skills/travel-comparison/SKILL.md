@@ -16,3 +16,5 @@ Validate comparisonInputs with scripts/research.mjs validate-comparison; complet
 ## Mandatory Publication Handoff
 
 Every completed comparison execution runs `npm run portal` and then `npm run pages:sync`. This deterministically rebuilds Pages and commits/pushes only `docs/`; private comparison reports and quotes remain under ignored `local/`. Do not call the execution complete if sync fails; report the blocker and preserve the local draft.
+
+After validation, the comparison coordinator must attempt genuine dispatch of the exact configured reviewer deployment in separate contexts for every configured pass. Do not skip inline dispatch solely because dedicated reviewer tasks are unregistered or a reviewer metadata field is null. Record actual invocation and context evidence. If the runtime has no dispatch mechanism or invocation fails, record concrete evidence and leave the comparison pending; never fabricate approval.

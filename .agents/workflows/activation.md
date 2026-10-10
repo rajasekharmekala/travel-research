@@ -1,22 +1,24 @@
 # Host App Activation
 
-Repository implementation is ready; task registration and actual reviewer/model identity remain host-runtime responsibilities. Never infer live registrations from local files.
+The host app is the source of truth for schedules, selected models, and task registration. The repository does not require `local/automation.json`; obtain run settings from the host invocation and never treat configured settings as runtime evidence.
+
+## Reviewer Dispatch
+
+At runtime, attempt genuine inline dispatch using the exact model in `.agents/config/reviewer.json`, with one fresh independent context per pass. Missing reviewer-task registration does not prove inline dispatch unavailable. Register separate app tasks only as an explicit host setup action if inline dispatch is unsupported; this workflow cannot register them. Use dedicated tasks during a run only after the host confirms registration. Record actual invocation results and concrete runtime evidence before leaving a draft awaiting review.
 
 ## Research Tasks
 
-Update or register the discovery job with the configured explicit researcher deployment, reasoning setting, timezone and schedule from local/automation.json. Prompt it to read AGENTS.md and run .agents/workflows/destination-assessment.md. One destination per run allows deep analysis and persistent progress; do not run retired CLI research or launchd jobs.
-
-Update or register comparison with the existing explicit deployment and configured schedule. Prompt it to run .agents/workflows/staged-comparison.md. Before all dossiers are current, it records pending state instead of final recommendations. Do not increase frequency or invent successful registrations.
+Configure discovery and comparison schedules and explicit researcher deployments in the host app. Prompts should read `AGENTS.md` and run `.agents/workflows/destination-assessment.md` or `.agents/workflows/staged-comparison.md` as appropriate. Repository instructions do not create or register host tasks. Keep the jobs independent: discovery advances one destination per run; comparison waits for reviewed current dossiers. Do not run retired CLI research or launchd jobs.
 
 ## Review Tasks
 
-Use genuine inline dispatch only if the host supports the exact configured reviewer deployment and exposes separate context/model evidence. Otherwise register four distinct pass tasks for source, consistency, coverage and opportunities using .agents/workflows/daily-review.md and the exact deployment in .agents/config/reviewer.json. Each task reviews only its assigned role and current hashes. A coordinator aggregates actual attempts, records review-round.json, and promotes only four current approvals.
+Use inline dispatch attempts first for all four configured roles: source, consistency, coverage, and opportunities. If the host exposes no dispatch mechanism or an invocation fails, record the concrete evidence and preserve pending review. A coordinator aggregates genuine attempts, records `review-round.json`, and promotes only four current approvals. Never imply that this repository or a prompt registered an app task.
 
 No unconfigured fallback. A model picker selection is configuration, not actual routing proof. Unknown researcher identity permits disclosed drafts; unknown reviewer identity/context cannot produce approval. Preserve consented browser privacy limitations and all account safeguards.
 
 ## GitHub Pages
 
-The remote is public. Keep personal dates, traveler counts, home airports, trip ceiling, immigration and employer details, booking captures, observed prices, reviewer receipts and private dossiers under ignored `local/`. `npm run portal` rebuilds the private report portal and also generates the public-safe homepage and 18 destination index pages in `docs/`. `npm run pages` regenerates only this sanitized export. Do not copy `local/portal` wholesale into docs. No private assessment is currently released. Assessment release needs a separate user-approved, privacy-reviewed public artifact; do not treat travel automation review as public-data approval.
+Keep personal dates, home airports, budgets, document/employment assessments, party costs, booking captures and reviewer internals under ignored `local/`. `npm run portal` generates the private portal and public-safe destination dossiers in `docs/`. Standing authorization permits automatic validated provisional research publication, including estimate-only options; no per-run release approval is required. Use the public projection, never copy private HTML wholesale. Review clearance and booking readiness are distinct from publication.
 
 ## Pages Sync
 

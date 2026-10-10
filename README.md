@@ -23,25 +23,17 @@ See .agents/workflows/research-protocol.md for commands and artifact contracts a
 
 ## App Setup
 
-1. Open this project in the Copilot app. Create a daily automation named `Travel discovery`, with this project as its working directory. Paste the contents of `.agents/workflows/daily-discovery.md`. Suggested time: 08:30 America/Los_Angeles.
-2. Create a separate DAILY automation named `Travel comparison`, using `.agents/workflows/daily-comparison.md`. Suggested time: 18:30 in the same zone. Both jobs have independent status and can run without the other finishing.
-3. Select an explicit researcher model in EACH automation's model picker. Record the exact IDs in `local/automation.json`. Null values deliberately block runs; no auto routing is accepted. This file does not control the app's model picker.
-4. Select explicitly supported source and value reviewer models in the same configuration. The host must support independent fresh-context dispatch to those models. At least one reviewer must differ from the researcher. Never assume the portfolio's custom model is available in this runtime.
-5. Enable browser tools. Prefer a supported private/incognito context, but regular browser canvas is explicitly authorized for public research when private isolation is unavailable. Do not stop solely over unknown isolation: record regular-canvas with the exact limitation `Regular browser canvas used; cookie and login isolation are unknown.` Never label it incognito. Do not log in, access accounts or profiles, inspect saved bookings, purchase, or continue through authentication requirements.
-6. Run each manually once. Manual runs are valid tests of their own capabilities, not proof of future scheduled execution. Save evidence-backed drafts even when actual researcher identity or reviewer dispatch is unavailable. Record executionMode as interactive, scheduled, or unknown. Publication still needs real independent reviewer receipts and approvals. Confirm complete review/publication before relying on published daily reports; record app schedule IDs and registration state separately.
-
-These files do NOT register app automations. This editing session has no app automation API, so registration and picker selection must be completed in the app. Do not assume app schedules run while your machine is offline or the app is closed; verify the host's documented execution behavior. No purchases, logins, email, or push delivery are configured.
+1. Keep trip-specific settings in ignored `local/trip.json`.
+2. Configure schedules, researcher model selections, and any dedicated reviewer tasks in the host app. Repository files describe the intended jobs but cannot register host tasks.
+3. Read `AGENTS.md` and the assigned workflow before a run. Model selection and schedule come from the actual host invocation; configuration is not proof of runtime routing. No `local/automation.json` is required.
 
 ## Daily Work
 
-Discovery scans the full 18-destination pool and compares flexible dates and origin airports. Comparison independently verifies a smaller shortlist, including flights, hotel quality, full trip costs, weather, entry/transit questions, and rejected alternatives. Browser automation uses rendered booking pages, not search snippets. Incognito provides cleaner isolation, not guaranteed cheaper fares.
-
-The two independent reviewers check source correctness and value/realism. They work in fresh contexts with explicit models. Approvals are tied to the draft's SHA-256 hash. Revisions invalidate previous receipts. There are at most two rounds; missing approval means no publication, not best-effort advice disguised as reviewed.
+Discovery claims one eligible destination and saves a validated dossier draft. The coordinator must attempt genuine inline dispatch of the exact reviewer deployment for all four configured passes. Missing reviewer metadata or unregistered dedicated tasks alone do not establish that inline dispatch is unavailable. If the runtime exposes no dispatch mechanism or calls fail, record concrete evidence and leave the draft pending. Dedicated tasks may be used only when the host confirms they are registered. Approved publication requires all current hash-bound approvals; best-effort output remains explicitly unapproved and follows policy.
 
 ## Private Output
 
 - `local/trip.json`: user constraints and 18 destinations.
-- `local/automation.json`: intended explicit model IDs and app setup status.
 - `local/runs/<timestamp>-<job>/`: browser text/screenshots, draft JSON, reviewer receipts, and approved `report.html`.
 - `local/reports/discovery-latest.html` and `comparison-latest.html`: last APPROVED webpages; inspect status before assuming they are fresh.
 - `local/status/<job>.json`: latest attempt, coverage, blockers, rejection/publication state.
@@ -118,11 +110,11 @@ Review receipt format and dispatch rules are in `.agents/workflows/review.md`. D
 
 ## Selected Models
 
-The private editable configuration currently records `bc-5-6-luna` with high reasoning for both researchers, `bc-4-1` from BCFoundry Provider for both reviewer passes, and `bc-6-luna` with high reasoning as reviewer fallback. These are user-supplied names, not verified provider/runtime IDs. Match them to the app picker and child-agent runtime before activation. Primary unavailability permits only the configured fallback, with an explicit reason in the review receipt and published report. Change the private configuration and corresponding app model/reasoning selectors together; neither controls the other automatically.
+Select explicit models in the host app. Record configured model selection separately from actual model identity; only runtime evidence can establish actual routing. Reviewer identity and context must be evidenced for approval. Do not use automatic or unconfigured fallbacks.
 
 ## Browser Consent Update
 
-On 2026-10-09 the user approved regular browser-canvas research under the safeguards above. `local/automation.json` records this revocable policy; set allowRegularBrowser:false and privateBrowserRequired:true to require verified private browsing again. Validation accepts either supported private-context evidence or explicitly authorized regular-canvas mode with unknown isolation, disclosure, and all safeguards. Reviewer approvals remain mandatory for publication. Prior blocked runs are historical and were not rewritten. Restart the app task using the current workflow; update any copied old private-only prompt first.
+The user has explicitly approved regular browser-canvas research when private isolation is unavailable, subject to the safeguards in `AGENTS.md`. A regular canvas is never described as private, and cookie/login isolation remains unknown. This consent does not authorize login, account/profile access, purchases, CAPTCHA solving, or bot-defense bypass. If consent is revoked, require verified private isolation or stop.
 
 ## Accuracy And Coverage Contract
 
@@ -130,30 +122,26 @@ Every discovery draft now needs destinationChecks: one entry per configured dest
 
 Observed candidates require quoteChecks.flight with travelers:2, exact depart/return, currency:USD, partyTotalUsd matching costs.flights, baggageIncluded:true, taxesIncluded:true, airlineDirectRechecked:true, and conditions. quoteChecks.hotel requires guests:2, exact checkIn/checkOut, actual nights, currency:USD, stayTotalUsd matching costs.hotels, taxesAndFeesIncluded:true, property, room, and cancellation. Check rendered controls, not URL text or generic listings. If arrival changes the required hotel stay, reconcile dates/nights before promoting it from lead. Missing checks mean priceType:estimate; estimates are not ranked trip bargains. Other costs remain projections even with observed flight/hotel quotes. The validator cannot authenticate site contents; independent source review remains essential.
 
-At least one observed flight-and-hotel option is required for ranked HTML publication. Estimate-only drafts remain leads. Historical drafts without the new ledger/checks fail current validation and must not be silently upgraded. A clearly labeled unreviewed preview can still display their limitations without creating approvals.
+Estimate-only options are published with low price confidence and conditional value assessments, not as verified bargains. Independent review clearance and booking readiness remain separate from visibility. Invalid historical artifacts cannot be silently upgraded; supported current-checkpoint research is automatically visible with its limitations and action plan.
 
 ## Dedicated Reviewer Tasks
 
-If inline fresh reviewer dispatch is unavailable, create TWO explicit-model app tasks using .agents/workflows/daily-review.md: source and value. Set each role in its prompt and select the configured primary reviewer (or only the configured disclosed fallback). Run after research drafts exist. No tasks are registered by these files. Actual reviewer identity remains required; if the host cannot provide it, keep publication blocked rather than inventing it.
+Dedicated per-pass app tasks are an optional host setup, not a repository registration mechanism. The coordinator attempts inline dispatch first. Use separate app tasks only after the host confirms they are registered; otherwise record the actual inline dispatch failure or unavailable runtime capability and leave review pending. Each genuine pass must use the exact configured deployment and bind its receipt to current draft and evidence hashes.
 
-Receipts now include evidenceSha256 as well as draftSha256. Use the evidenceHash command in review.md; approval is invalid after any evidence or draft change. Dedicated tasks read the newest valid draft, verify sources independently, and write only their own role receipt. The second completed pass can invoke publication when both hash-bound approvals are valid. The researcher cannot write reviewer approvals.
+## Current Review Policy
 
-## Report Layout
-
-The report now separates comparable observed options from unverified leads, shows full destination coverage and continuation reasons, and provides expandable cost/itinerary/source details. Projected totals are not labeled bookable package prices. Reviewer findings and limitations remain visible. The current historical preview is unreviewed and contains no upgraded prices or fabricated approvals.
-
-## Current Review Policy (Supersedes Earlier Two-Pass Setup)
-
-`.agents/config/reviewer.json` is the single review owner. Model: `54cf1c50-6a65-409c-b27a-535fd089182d/aifoundry/Qwen/Qwen-latest`. Passes: source, consistency, coverage, opportunities. Hard maximum: four complete rounds, with one malformed-output retry per pass before revise/failure. The old bc-4-1/fallback reviewer settings are retired; researcher model choices are unchanged. Provider/model dispatch still needs app verification; configuration does not invoke an external model by itself.
-
-The rubric and receipt/state schemas are in `.agents/workflows/review.md`. Review verifies source support and arithmetic/travel dates, audits all 18 destinations, and proposes constructive next-research opportunities. Coverage receipts assess every destination with status, evidence-backed reason, and next action. Approved discovery cannot skip destinations; comparison can price a shortlist while accounting for exclusions across the full pool. Leads and genuine blockers are not verified quotes. Optional suggestions do not block approval; factual or safety defects do. Receipts go under `<RUN_DIR>/review` and bind current draft/evidence hashes. Four rounds apply per report/run, not per location.
-
-Best effort is allowed for evidenced reviewer unavailability or reaching the four-round limit. It is NOT approval and still requires mandatory quote validation, at least one observed flight/hotel option, current hashes, recorded attempts and missing passes, and disclosed unresolved findings. Critical/high findings block it. `npm run publish-best-effort -- <draft.json>` writes a separate unapproved page without overwriting approved latest reports. No reviewer, pricing evidence, or approval may be invented. This change does not review the old draft or register new app tasks.
+`.agents/config/reviewer.json` is the sole review-policy owner: exact configured deployment, source/consistency/coverage/opportunities passes, and a maximum of four rounds. Every pass must be an independent genuine invocation with host-backed model/context evidence. Configuration alone does not invoke a model or prove its identity. Approved publication requires all four current approvals; evidenced reviewer unavailability or exhausted rounds can permit only separately labeled NOT APPROVED best effort under policy. Never fabricate attempts, findings, prices, receipts, approvals, or runtime identity.
 
 ## GitHub Pages And Privacy
 
 The public site is generated in `docs/` and served from `main:/docs`. Every `npm run portal` rebuilds all configured destination pages in the shared theme. Scheduled workflows run `npm run pages:sync` afterward to commit and push only changed `docs/` pages. The sync is limited to `main`, the configured remote and `docs/`; it never stages `local/`, force-pushes or commits unrelated work. It requires SSH authorization in the task runtime.
 
-The generated public list contains configured location names and credited destination photographs only. Travelers, dates, airports, budgets, immigration and remote-work details, observed prices, booking evidence, reviewer receipts, private assessments and local state stay excluded. No private dossier is automatically copied to Pages. A public assessment requires a separate sanitized and approved release; none are currently released. This intentional boundary protects the trip brief while keeping every public destination page current.
+The public site automatically includes validated destination research through the privacy-safe projection, including provisional reviews and estimate-only options. Personal dates, home airports, document/employment assessments, budgets, party costs, booking evidence, reviewer internals and raw private artifacts stay excluded. Standing user authorization replaces per-run public-release approval. Publishing does not grant clean reviewer approval or booking readiness.
 
 The Pages source is `main:/docs`. The corporate Pages API reports `built` at https://git.corp.adobe.com/pages/mereddy/travel-search/; unauthenticated requests redirect to Adobe Okta.
+
+## Research Publication Contract
+
+Completed destination research is automatically exported to GitHub Pages for the user's decision-making, including estimates and provisional reviews. Publishing is not booking authorization and does not grant reviewed approval. Pages now displays validated current-checkpoint dossiers instead of permanent placeholders. Unknown eligibility, source failures, reviewer findings, incomplete price conditions and stale quotes remain visible alongside conditional value/confidence labels and a prioritized action plan. Ratings are explained qualitative labels, not calibrated probabilities or new reviewer approvals.
+
+The public projection omits personal travel dates, home airports, document/employment assessments, party costs/budgets, evidence and reviewer internals; full details remain in the local portal. Standing authorization replaces per-run public-release approval. Invalid artifacts and privacy failures block export. `npm run portal` and `npm run pages:sync` generate and push only validated public-safe docs; a failed push is an incomplete publication.
