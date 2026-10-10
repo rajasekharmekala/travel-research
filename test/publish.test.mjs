@@ -268,7 +268,8 @@ test('comparison revalidates approved dossier receipts and detects changed evide
       fs.writeFileSync(path.join(publicWorkspace, 'local/research/state.json'), JSON.stringify(state));
       fs.writeFileSync(path.join(publicWorkspace, '.agents/config/reviewer.json'), JSON.stringify(policy));
       assert.equal(buildPages(publicWorkspace).publicAssessments, 1);
-      const publicPage = fs.readFileSync(path.join(publicWorkspace, 'docs/destinations', `${record.id}.html`), 'utf8');
+      const pageFile = fs.readdirSync(path.join(publicWorkspace, 'docs/destinations')).find(file => !/^[a-f0-9]{16}\.html$/.test(file));
+      const publicPage = fs.readFileSync(path.join(publicWorkspace, 'docs/destinations', pageFile), 'utf8');
       assert.match(publicPage, /Your Action Plan/);
       assert.match(publicPage, /Provisional research/);
       assert.equal(publicPage.includes('local/runs'), false);
