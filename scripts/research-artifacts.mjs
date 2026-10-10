@@ -11,12 +11,13 @@ export function runFile(local, filename) {
   return resolved;
 }
 
-export function readArtifact(local, filename, config, trip, { reviewed = false, historicalPrices = false, now = new Date() } = {}) {
+export function readArtifact(local, filename, config, trip, { reviewed = false, historicalPrices = false, requirePricingEffort = false, now = new Date() } = {}) {
   const resolved = runFile(local, filename);
   const bytes = fs.readFileSync(resolved);
   const report = JSON.parse(bytes);
   const directory = path.dirname(resolved);
   validate(report, config, trip, directory, now, { historicalPrices });
+  if (requirePricingEffort) validatePricingEffort(report, directory);
   const draftSha256 = hash(bytes);
   const evidenceSha256 = evidenceHash(report, directory);
   let receipts = [];
@@ -55,4 +56,26 @@ export function validateComparisonInputs(report, state, trip, config, local, now
     if (artifact.draftSha256 !== input.draftSha256 || artifact.evidenceSha256 !== input.evidenceSha256) throw new Error('Comparison input changed since approval');
   }
   return readiness;
+}
+
+export function validatePricingEffort(report, directory) {
+  for (const candidate of report.candidates ?? []) {
+    if (candidate.priceType !== 'estimate') continue;
+    const effort = candidate.pricingEffort;
+    if (!effort || !Array.isArray(effort.attempts)) throw new Error('Estimate checkpoint requires documented pricingEffort');
+    for (const kind of ['flights', 'hotels']) {
+      const attempts = effort.attempts.filter(attempt => attempt.kind === kind);
+      for (const channel of ['aggregator', 'direct']) {
+        if (!attempts.some(attempt => attempt.channel === channel)) throw new Error(`Pricing effort requires ${kind} ${channel} attempt`);
+      }
+      for (const attempt of attempts) {
+        const evidence = attempt.evidence;
+        if (!['aggregator', 'direct'].includes(attempt.channel) || !/^https:\/\//.test(attempt.source ?? '') || !Number.isFinite(Date.parse(attempt.observedAt)) || !attempt.result?.trim() || !attempt.searchContext?.trim() || typeof evidence !== 'string' || !report.browser?.evidenceFiles?.includes(evidence)) throw new Error('Pricing attempt needs source, time, exact search context, result and hashed browser evidence');
+        const filename = fs.realpathSync(path.resolve(directory, evidence));
+        if (!filename.startsWith(fs.realpathSync(directory) + path.sep) || !fs.statSync(filename).isFile() || !fs.readFileSync(filename, 'utf8').trim()) throw new Error('Pricing attempt requires nonempty run-local evidence');
+      }
+      const basis = effort.basis?.[kind];
+      if (!basis?.calculation?.trim() || !basis.assumptions?.trim() || !Array.isArray(basis.evidence) || !basis.evidence.length || basis.evidence.some(file => !attempts.some(attempt => attempt.evidence === file))) throw new Error(`Estimate requires traceable ${kind} calculation, assumptions and evidence`);
+    }
+  }
 }

@@ -176,9 +176,11 @@ export function loadPublicDossier(workspace, trip, id) {
   if (report.job !== 'destination' || report.destinationId !== id || artifact.draftSha256 !== reference.draftSha256 || artifact.evidenceSha256 !== reference.evidenceSha256) {
     throw new Error('Public dossier requires a matching validated checkpoint');
   }
+  let reviewApproved = false;
   let reviewStatus = 'Provisional: independent review is incomplete or did not approve this draft.';
   try {
     readArtifact(local, filename, config, trip, { reviewed: true, historicalPrices: true });
+    reviewApproved = true;
     reviewStatus = 'Four independent passes approved the source draft. Approval is not booking readiness.';
   } catch (error) {
     reviewStatus = error.message === 'Unresolved findings cannot receive approved publication'
@@ -202,7 +204,7 @@ export function loadPublicDossier(workspace, trip, id) {
     if (receipt.draftSha256 !== artifact.draftSha256 || receipt.evidenceSha256 !== artifact.evidenceSha256) continue;
     findings.push(...(receipt.findings ?? []).filter(finding => !finding.resolved).map(finding => `${role}: ${finding.message}`));
   }
-  return projectPublicDossier(report, trip, reviewStatus, findings, presentation);
+  return { ...projectPublicDossier(report, trip, reviewStatus, findings, presentation), reviewApproved };
 }
 
 const figure = image => image ? `<figure class="section-image"><img src="${escape(image.src)}" alt="${escape(image.alt)}" loading="lazy"><figcaption>Image: ${escape(image.artist)}, ${escape(image.license)}, <a href="${escape(image.sourceUrl)}" rel="noreferrer">${escape(image.title)} on Wikimedia Commons</a></figcaption></figure>` : '';

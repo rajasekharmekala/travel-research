@@ -26,7 +26,7 @@ export async function main(args = process.argv.slice(2)) {
       if (action === 'checkpoint') {
         const request = json(runFile(local, input));
         if (request.outcome === 'awaiting_review') {
-          const artifact = readArtifact(local, path.join(local, request.reportPath), config, trip);
+          const artifact = readArtifact(local, path.join(local, request.reportPath), config, trip, { requirePricingEffort: true });
           if (artifact.report.job !== 'destination' || artifact.report.destinationId !== request.id) throw new Error('Checkpoint artifact must match the claimed destination');
           request.artifact = { runDir: artifact.runDir, reportPath: artifact.reportPath, draftSha256: artifact.draftSha256, evidenceSha256: artifact.evidenceSha256 };
         }

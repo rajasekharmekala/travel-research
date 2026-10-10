@@ -63,7 +63,7 @@ export function buildPages(workspace = project) {
     return {
       id: page.id,
       slug: page.slug,
-      status: publicDossier ? 'published-research' : 'pending',
+      status: publicDossier ? (publicDossier.reviewApproved ? 'approved' : 'awaiting_review') : 'pending',
       destination: { name: page.name },
       publicDossier,
       ...(publicDossier ? { report: { dossier: { thesis: publicDossier.thesis, verdict: publicDossier.verdict } } } : {}),
@@ -80,7 +80,7 @@ export function buildPages(workspace = project) {
     if (!source.startsWith(path.resolve(portalMedia) + path.sep) || !fs.existsSync(source) || !fs.realpathSync(source).startsWith(fs.realpathSync(portalMedia) + path.sep) || !fs.statSync(source).isFile()) continue;
     const filename = path.basename(item.file);
     fs.copyFileSync(source, path.join(mediaDirectory, filename));
-    publicMedia[name] = { file: `media/${filename}`, alt: item.alt, credit: item.credit };
+    publicMedia[name] = { file: `media/${filename}`, alt: item.alt, credit: item.credit, source: item.source };
   }
 
   const sectionMedia = new Set();
@@ -93,6 +93,9 @@ export function buildPages(workspace = project) {
       if (!sectionImageName.test(filename) || !fs.existsSync(source)) throw new Error('Section image is missing from local media');
       fs.copyFileSync(source, path.join(mediaDirectory, filename));
       sectionMedia.add(`media/${filename}`);
+      if (!publicMedia[entry.destination.name]) {
+        publicMedia[entry.destination.name] = { file: `media/${filename}`, alt: section.image.alt, credit: `${section.image.artist} / ${section.image.license}`, source: section.image.sourceUrl };
+      }
     }
   }
 

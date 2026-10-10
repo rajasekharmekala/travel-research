@@ -44,3 +44,11 @@ test('pending destinations show real status without invented analysis or approva
   assert.match(html, /Deep research has not yet produced/);
   assert.doesNotMatch(html, /Four-pass reviewed assessment/);
 });
+
+test('homepage separates available research from approval and uses readable dossier links', () => {
+  const html = renderHome(trip, [{ ...entry, slug: 'test-destination', publicDossier: { reviewStatus: 'Provisional research: independent review is incomplete.' } }, { id: 'pending', status: 'pending', destination: { name: 'Pending' } }]);
+  assert.match(html, /<strong>1 \/ 2<\/strong><span>Research dossiers available/);
+  assert.match(html, /<strong>0<\/strong><span>Independently approved/);
+  assert.match(html, /Provisional research: independent review is incomplete/);
+  assert.match(html, /href="destinations\/test-destination.html"[^>]*>Open dossier/);
+});

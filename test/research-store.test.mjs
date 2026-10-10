@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { reconcile, claimDestination, checkpointDestination, transaction, destinationId, recordReviewRound, requestRevision } from '../scripts/research-store.mjs';
-import { promoteDestination } from '../scripts/research-artifacts.mjs';
+import { promoteDestination, validatePricingEffort } from '../scripts/research-artifacts.mjs';
 
 const trip = { destinations: [{ name: 'Japan' }, { name: 'Portugal' }] };
 const now = '2026-10-09T12:00:00Z';
@@ -104,4 +104,31 @@ test('staged promotion cannot bypass recorded review rounds', () => {
   artifact.receipts = attempts.map(attempt => ({ role: attempt.role, round: 1 }));
   promoteDestination(state, artifact, config, new Date(now));
   assert.equal(record.status, 'approved');
+});
+
+test('estimate intake requires direct and aggregator checks with hashed evidence and a traceable basis', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'travel-pricing-effort-'));
+  try {
+    assert.throws(() => validatePricingEffort({ candidates: [{ priceType: 'estimate' }] }, directory), /documented pricingEffort/);
+    const attempts = [];
+    for (const kind of ['flights', 'hotels']) {
+      for (const channel of ['aggregator', 'direct']) {
+        const evidence = `${kind}-${channel}.txt`;
+        await writeFile(path.join(directory, evidence), 'SYNTHETIC public form capture; exact dates and two travelers; no stable total.');
+        attempts.push({ kind, channel, evidence, source: `https://example.com/${kind}/${channel}`, observedAt: now, searchContext: 'SYNTHETIC exact dates, two travelers, USD', result: 'SYNTHETIC total unavailable' });
+      }
+    }
+    const basis = Object.fromEntries(['flights', 'hotels'].map(kind => [kind, { calculation: 'SYNTHETIC reference amount times units', assumptions: 'SYNTHETIC scenario, not a quote', evidence: [`${kind}-aggregator.txt`] }]));
+    const report = { browser: { evidenceFiles: attempts.map(attempt => attempt.evidence) }, candidates: [{ priceType: 'estimate', pricingEffort: { attempts, basis } }] };
+    assert.doesNotThrow(() => validatePricingEffort(report, directory));
+    const missingDirect = structuredClone(report);
+    missingDirect.candidates[0].pricingEffort.attempts = attempts.filter(attempt => attempt.kind !== 'hotels' || attempt.channel !== 'direct');
+    assert.throws(() => validatePricingEffort(missingDirect, directory), /hotels direct attempt/);
+    const missingEvidence = structuredClone(report);
+    missingEvidence.browser.evidenceFiles = [];
+    assert.throws(() => validatePricingEffort(missingEvidence, directory), /hashed browser evidence/);
+    const unsupportedBasis = structuredClone(report);
+    unsupportedBasis.candidates[0].pricingEffort.basis.flights.evidence = ['unrelated.txt'];
+    assert.throws(() => validatePricingEffort(unsupportedBasis, directory), /traceable flights calculation/);
+  } finally { await rm(directory, { recursive: true, force: true }); }
 });

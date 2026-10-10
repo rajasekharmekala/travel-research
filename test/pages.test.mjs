@@ -19,6 +19,7 @@ test('Pages build includes all configured destinations, matches the private them
     const home = fs.readFileSync(path.join(root, 'docs/index.html'), 'utf8');
     assert.match(home, /destinations\/japan\.html/);
     assert.match(home, /destinations\/italy\.html/);
+    assert.doesNotMatch(home, /Party budget target|Provisional ceiling/);
     const pageFiles = fs.readdirSync(path.join(root, 'docs/destinations'));
     const readable = pageFiles.filter(file => !/^[a-f0-9]{16}\.html$/.test(file)).sort();
     const legacy = pageFiles.filter(file => /^[a-f0-9]{16}\.html$/.test(file));
