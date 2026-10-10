@@ -18,6 +18,7 @@ function evidenceFile(relative, directory) {
   if (!filename.startsWith(directory + path.sep) || !fs.existsSync(filename) || !fs.realpathSync(filename).startsWith(fs.realpathSync(directory) + path.sep) || !fs.statSync(filename).isFile() || fs.statSync(filename).size === 0) throw new Error('Evidence must be a nonempty file inside the run directory');
 }
 import { validateDossier, dossierEvidence } from './dossier.mjs';
+import { loadAutomationConfig, configForReport } from './automation-config.mjs';
 export function validate(report, config, trip, directory, now = new Date(), { historicalPrices = false } = {}) {
   if (!['discovery', 'comparison', 'destination'].includes(report.job) || !['ok', 'partial'].includes(report.status) || typeof report.summary !== 'string' || !Array.isArray(report.limitations) || !Array.isArray(report.coverage) || !Array.isArray(report.candidates)) throw new Error('Invalid report envelope');
   const desired = config.jobs[report.job === 'destination' ? 'discovery' : report.job].researcherModel;
@@ -115,7 +116,7 @@ async function main() {
   const bytes = fs.readFileSync(filename);
   const report = JSON.parse(bytes);
   const policy = JSON.parse(fs.readFileSync(path.join(root, '.agents/config/reviewer.json')));
-  const config = applyReviewPolicy(JSON.parse(fs.readFileSync(path.join(local, 'automation.json'))), policy);
+  const config = applyReviewPolicy(configForReport(loadAutomationConfig(local), report), policy);
   const trip = JSON.parse(fs.readFileSync(path.join(local, 'trip.json')));
   const directory = path.dirname(filename);
   validate(report, config, trip, directory);

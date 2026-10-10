@@ -5,6 +5,7 @@ import { reconcile, claimDestination, checkpointDestination, transaction, record
 import { comparisonReadiness } from './dossier.mjs';
 import { readArtifact, promoteDestination, validateComparisonInputs, runFile } from './research-artifacts.mjs';
 import { applyReviewPolicy } from './review-policy.mjs';
+import { loadAutomationConfig } from './automation-config.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const local = path.join(root, 'local');
@@ -14,7 +15,7 @@ const json = filename => JSON.parse(fs.readFileSync(filename, 'utf8'));
 export async function main(args = process.argv.slice(2)) {
   const [action, input, argument] = args;
   const trip = json(path.join(local, 'trip.json'));
-  const config = applyReviewPolicy(json(path.join(local, 'automation.json')), json(path.join(root, '.agents/config/reviewer.json')));
+  const config = applyReviewPolicy(loadAutomationConfig(local), json(path.join(root, '.agents/config/reviewer.json')));
   let result;
   if (['init', 'claim', 'checkpoint', 'promote', 'propose', 'revise', 'record-review'].includes(action)) {
     result = await transaction(store, async existing => {

@@ -8,6 +8,7 @@ import { readArtifact } from './research-artifacts.mjs';
 import { applyReviewPolicy } from './review-policy.mjs';
 import { renderHome, renderDestination } from './portal-view.mjs';
 import { buildPages } from './build-pages.mjs';
+import { loadAutomationConfig, configForReport } from './automation-config.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const readJson = filename => JSON.parse(fs.readFileSync(filename, 'utf8'));
@@ -17,7 +18,7 @@ export function buildPortal(project = root, now = new Date()) {
   const local = path.join(project, 'local');
   const trip = readJson(path.join(local, 'trip.json'));
   const policy = readJson(path.join(project, '.agents/config/reviewer.json'));
-  const config = applyReviewPolicy(readJson(path.join(local, 'automation.json')), policy);
+  const baseConfig = applyReviewPolicy(loadAutomationConfig(local), policy);
   const state = reconcile(optional(path.join(local, 'research/state.json')), trip);
   const readiness = comparisonReadiness(state, trip, now);
   const output = path.join(local, 'portal');
@@ -33,7 +34,10 @@ export function buildPortal(project = root, now = new Date()) {
     const artifact = record.status === 'approved' ? record.assessment : record.artifact;
     if (artifact?.reportPath) {
       try {
-        const loaded = readArtifact(local, path.join(local, artifact.reportPath), config, trip, { reviewed: record.status === 'approved', historicalPrices: true, now });
+        const reportPath = path.join(local, artifact.reportPath);
+        const report = readJson(reportPath);
+        const config = configForReport(baseConfig, report);
+        const loaded = readArtifact(local, reportPath, config, trip, { reviewed: record.status === 'approved', historicalPrices: true, now });
         if (loaded.report.job !== 'destination' || loaded.report.destinationId !== id || loaded.draftSha256 !== artifact.draftSha256 || loaded.evidenceSha256 !== artifact.evidenceSha256 || (record.status === 'approved' && artifact.policySha256 !== digest(policy))) throw new Error('Stored dossier identity, hashes or policy no longer match');
         entry.report = loaded.report;
         if (entry.status === 'approved') entry.receipts = policy.passes.map(role => readJson(path.join(local, artifact.runDir, 'review', `${role}.review.json`)));
