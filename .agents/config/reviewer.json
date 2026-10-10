@@ -1,0 +1,13 @@
+{
+  "_comment": "Single review-policy owner. Four complete review rounds maximum. Best effort is explicitly unapproved and never overrides quote validation or critical/high findings.",
+  "model": "54cf1c50-6a65-409c-b27a-535fd089182d/aifoundry/Qwen/Qwen-latest",
+  "passes": ["source", "consistency", "coverage", "opportunities"],
+  "max_rounds": 4,
+  "output_dir": "<RUN_DIR>/review",
+  "on_malformed_output": "rerun_once_then_revise",
+  "on_unavailable_reviewer": "best_effort_with_disclosure",
+  "require_validator_pass": true,
+  "allow_best_effort_after_limit": true,
+  "block_best_effort_severities": ["critical", "high"],
+  "require_actual_model_evidence": true
+}

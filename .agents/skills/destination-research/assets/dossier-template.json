@@ -1,0 +1,40 @@
+{
+  "job": "destination",
+  "status": "partial",
+  "destinationId": "COPY_FROM_CLAIM",
+  "tripSha256": "COPY_FROM_CLAIM_STATE",
+  "configuredModel": "COPY_EXPLICIT_APP_CONFIGURATION",
+  "model": null,
+  "modelEvidence": null,
+  "executionMode": "unknown",
+  "summary": "REPLACE_WITH_EVIDENCE_BACKED_SUMMARY",
+  "coverage": ["EXACT_CONFIGURED_DESTINATION_NAME"],
+  "limitations": ["Actual researcher model identity is unverified; configured model is not runtime proof.", "Regular browser canvas used; cookie and login isolation are unknown."],
+  "browser": {
+    "privateContextVerified": false,
+    "verificationMethod": "regular-canvas",
+    "isolation": "unknown",
+    "isolationEvidence": null,
+    "safeguards": { "noLogin": true, "noAccountAccess": true, "noProfileInspection": true, "stopOnAuthentication": true }
+  },
+  "candidates": [],
+  "dossier": {
+    "verdict": "conditional",
+    "thesis": "REPLACE_WITH_SUPPORTED_THESIS",
+    "unresolved": [],
+    "nextChecks": [],
+    "itineraryCandidateIndex": 0,
+    "sections": [
+      { "key": "decision", "text": "", "sources": [], "evidence": [], "observedAt": null },
+      { "key": "entry_and_transit", "text": "", "sources": [], "evidence": [], "observedAt": null },
+      { "key": "climate_and_weather", "text": "", "sources": [], "evidence": [], "observedAt": null, "weatherBasis": "climatology", "regionalVariation": "", "forecastLimitations": "" },
+      { "key": "experiences_and_closures", "text": "", "sources": [], "evidence": [], "observedAt": null },
+      { "key": "neighborhoods_and_lodging", "text": "", "sources": [], "evidence": [], "observedAt": null },
+      { "key": "transport_and_fatigue", "text": "", "sources": [], "evidence": [], "observedAt": null },
+      { "key": "budget_and_value", "text": "", "sources": [], "evidence": [], "observedAt": null },
+      { "key": "risks_and_cancellation", "text": "", "sources": [], "evidence": [], "observedAt": null },
+      { "key": "alternatives_and_pushback", "text": "", "sources": [], "evidence": [], "observedAt": null }
+    ],
+    "itinerary": []
+  }
+}
