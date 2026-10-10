@@ -12,11 +12,12 @@ export function dossierEvidence(report) {
   return [...new Set([...(report.dossier?.sections ?? []).flatMap(section => section.evidence ?? []), ...(report.dossier?.itinerary ?? []).flatMap(day => day.evidence ?? [])])];
 }
 
-export function validateDossier(report, trip, directory, now = new Date()) {
+export function validateDossier(report, trip, directory, now = new Date(), { allowAppendedDestinations = false } = {}) {
   const destination = trip.destinations.find(item => destinationId(item) === report.destinationId);
   const dossier = report.dossier;
   if (!destination || report.coverage.length !== 1 || report.coverage[0] !== destination.name || report.candidates.some(candidate => candidate.destination !== destination.name)) throw new Error('Dossier must cover exactly its configured destination');
-  if (report.tripSha256 !== digest(trip)) throw new Error('Dossier trip fingerprint is stale');
+  const matchingTrip = report.tripSha256 === digest(trip) || (allowAppendedDestinations && trip.destinations.some((destination, index) => index < trip.destinations.length - 1 && report.tripSha256 === digest({ ...trip, destinations: trip.destinations.slice(0, index + 1) })));
+  if (!matchingTrip) throw new Error('Dossier trip fingerprint is stale');
   if (!dossier || !['viable', 'conditional', 'not_recommended'].includes(dossier.verdict) || !text(dossier.thesis) || !Array.isArray(dossier.unresolved) || !Array.isArray(dossier.nextChecks)) throw new Error('Dossier requires verdict, thesis, unresolved questions and next checks');
   if (!Array.isArray(dossier.sections) || dossier.sections.length !== sectionKeys.length || new Set(dossier.sections.map(section => section.key)).size !== sectionKeys.length) throw new Error('Dossier requires every analysis section exactly once');
   const referenced = new Set();

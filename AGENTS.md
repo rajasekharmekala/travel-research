@@ -26,7 +26,7 @@ US status does not prove re-entry eligibility; unknown destination/transit docum
 
 ## Review Purpose
 
-Coverage assesses every configured destination (currently 18), not just report candidates. Discovery cannot receive coverage approval while destinations are not_checked; genuine blockers must have evidence and next actions. Comparison may deeply price a shortlist while explaining all other destinations. Opportunities is constructive: propose high-value next checks and alternatives, separately from blocking factual/safety findings. Source and consistency cover misleading claims; no standalone tone pass is required. The four-round limit is per report/run, not per destination.
+Coverage assesses every configured destination, not just report candidates. Discovery cannot receive coverage approval while destinations are not_checked; genuine blockers must have evidence and next actions. Comparison may deeply price a shortlist while explaining all other destinations. Opportunities is constructive: propose high-value next checks and alternatives, separately from blocking factual/safety findings. Source and consistency cover misleading claims; no standalone tone pass is required. The four-round limit is per report/run, not per destination.
 
 ## Publication
 

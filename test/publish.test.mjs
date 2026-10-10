@@ -286,3 +286,13 @@ test('comparison revalidates approved dossier receipts and detects changed evide
     assert.throws(() => validateComparisonInputs(comparison, state, trip, settings, local, now), /evidence hash/);
   } finally { fs.rmSync(local, { recursive: true, force: true }); }
 });
+
+test('historical dossiers survive appended destinations but not changed trip constraints or removals', () => {
+  const draft = destinationReport();
+  const expanded = { ...trip, destinations: [...trip.destinations, { name: 'Switzerland', airports: ['ZRH'], style: 'winter scenery' }] };
+  assert.throws(() => validate(draft, config, expanded, directory, now), /fingerprint/);
+  const beforeRemoval = { ...draft, tripSha256: digest(expanded) };
+  assert.throws(() => validate(beforeRemoval, config, trip, directory, now, { historicalPrices: true }), /fingerprint/);
+  assert.doesNotThrow(() => validate(draft, config, expanded, directory, now, { historicalPrices: true }));
+  assert.throws(() => validate(draft, config, { ...expanded, budget: { ...trip.budget, targetUsd: 9999 } }, directory, now, { historicalPrices: true }), /fingerprint/);
+});

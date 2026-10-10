@@ -33,7 +33,7 @@ Discovery claims one eligible destination and saves a validated dossier draft. T
 
 ## Private Output
 
-- `local/trip.json`: user constraints and 18 destinations.
+- `local/trip.json`: user constraints and configured destinations.
 - `local/runs/<timestamp>-<job>/`: browser text/screenshots, draft JSON, reviewer receipts, and approved `report.html`.
 - `local/reports/discovery-latest.html` and `comparison-latest.html`: last APPROVED webpages; inspect status before assuming they are fresh.
 - `local/status/<job>.json`: latest attempt, coverage, blockers, rejection/publication state.

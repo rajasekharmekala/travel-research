@@ -10,15 +10,16 @@ function fixture() {
   return { status: 'ok', summary: 'Test fixture only', searchedDestinations: names, limitations: [], candidates: [{ destination: names[0], depart: '2026-12-23', return: '2027-01-02', origin: 'SFO', passengers: 2, currency: 'USD', quoteType: 'estimate', observedAt: now.toISOString(), flightUrl: 'https://www.example.com/flights', hotelUrl: 'https://www.example.com/hotels', visaSourceUrls: [], entryEligibility: 'unknown', usReentry: 'unknown', remoteWorkApproved: false, selfTransfer: false, costBreakdownUsd: { flights: 2800, hotels: 2200, meals: 700, groundTransport: 200, activities: 300, insuranceAndContingency: 600 }, totalUsd: 6800, flightDetails: 'Test fixture', hotelDetails: 'Test fixture', risks: ['Unknown eligibility'] }] };
 }
 
-test('private brief validates and rotating batches cover all 18 destinations', () => {
+test('private brief validates and rotating batches cover all configured destinations', () => {
   validateTrip(trip);
   const names = new Set();
-  for (let offset = 0; offset < 3; offset++) {
+  const rotationDays = Math.ceil(trip.destinations.length / trip.monitoring.dailyBatchSize);
+  for (let offset = 0; offset < rotationDays; offset++) {
     const day = new Date(now.getTime() + offset * 86400000);
     for (const destination of selectedDestinations(trip, 'daily', day)) names.add(destination.name);
   }
-  assert.equal(names.size, 18);
-  assert.equal(selectedDestinations(trip, 'weekly', now).length, 18);
+  assert.equal(names.size, trip.destinations.length);
+  assert.equal(selectedDestinations(trip, 'weekly', now).length, trip.destinations.length);
   assert(![...names].some(name => /Hawaii/i.test(name)));
 });
 

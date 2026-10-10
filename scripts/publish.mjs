@@ -63,7 +63,7 @@ export function validate(report, config, trip, directory, now = new Date(), { hi
     candidate.evidence.forEach(relative => evidenceFile(relative, directory));
     if (candidate.recommendation.toLowerCase() === 'book') throw new Error('Reports may compare, not authorize booking');
   }
-  if (report.job === 'destination') validateDossier(report, trip, directory, now);
+  if (report.job === 'destination') validateDossier(report, trip, directory, now, { allowAppendedDestinations: historicalPrices });
   return report;
 }
 import { renderReport } from './report-view.mjs';
