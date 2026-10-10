@@ -19,3 +19,7 @@ Verify rendered TWO-adult flight and exact-date TWO-guest room controls. Do not 
 ## Current Review Policy
 
 Read .agents/config/reviewer.json and review.md after validating the draft. Four independent Qwen passes and four complete rounds maximum replace earlier source/value-only rules. Record real attempts and unresolved findings. All four current approvals yield approved output. Evidenced reviewer unavailability or exhausted rounds may yield separately labeled NOT APPROVED best effort only under mandatory validation and no unresolved critical/high issues. Insufficient observed quote evidence stays a lead, not a report. No configured model or file alone proves that an actual review ran.
+
+## Mandatory Completion Gate
+
+The top-level comparison run finishes with `npm run portal` followed by `npm run pages:sync`, including partial, blocked, or no-change runs. Verify success/no changes; if sync fails, report the exact failure and do not claim publication. Only generated `docs/` may be committed/pushed.

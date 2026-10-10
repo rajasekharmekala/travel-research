@@ -12,3 +12,7 @@ Freeze comparisonInputs using every configured destination ID and approved draft
 Compare consistent trip lengths, party totals, budget exposure, cancellation risk, rain/temperature/daylight, experience fit, holiday closures, flight fatigue and ground logistics. Explain different winners under value, weather, culture, beach and low-fatigue priorities; do not reduce everything to an unexplained score. Present the strongest counterargument to each finalist, downside cases, document gates and what would change the ranking. Unknown entry, transit, US re-entry or remote-work permission blocks buy recommendations. Only the user can expand budget/scope; purchasing is never authorized.
 
 Validate comparisonInputs with scripts/research.mjs validate-comparison; complete genuine four-pass travel-review and publish only matching approved hashes. Rebuild the portal. Record feedback and an evidence-backed future refresh plan rather than a price guarantee.
+
+## Mandatory Publication Handoff
+
+Every completed comparison execution runs `npm run portal` and then `npm run pages:sync`. This deterministically rebuilds Pages and commits/pushes only `docs/`; private comparison reports and quotes remain under ignored `local/`. Do not call the execution complete if sync fails; report the blocker and preserve the local draft.

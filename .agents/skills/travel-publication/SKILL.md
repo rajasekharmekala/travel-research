@@ -10,3 +10,7 @@ Read ../../workflows/research-protocol.md. Structured drafts, saved evidence and
 Promote reviewed destination dossiers through scripts/research.mjs promote. Publish reviewed comparisons through scripts/publish.mjs publish. Policy-eligible best effort uses publish-best-effort and remains NOT APPROVED; it never replaces the approved ledger or approved latest output. Rebuild the portal after each checkpoint, promotion or meaningful status change.
 
 Preserve the portfolio-inspired neutral report theme, readable chapter hierarchy, mobile navigation, cost breakdowns, exact dates, historical quote labeling, limitations, references and explicit review status. Escape all website/draft text. No trackers, remote personal content, authentication, public hosting, purchases, portfolio access or email. Validate with tests and rendered desktop/mobile checks. Files and configuration do not register scheduled tasks.
+
+## Mandatory Completion Gate
+
+For every completed execution, run `npm run portal`, then `npm run pages:sync`, and confirm the command succeeds or reports no changes. The sync rebuilds/validates the allowlisted public `docs/` tree, commits only docs changes, and non-force pushes `main`. It refuses wrong branches/remotes, conflicting writes, and unlisted docs files. A sync failure means Pages was not published; disclose that rather than claiming completion.

@@ -29,3 +29,7 @@ Change the actual rendered flight passenger control to TWO adults and verify the
 For observed candidates, include quoteChecks.flight: travelers, depart, return, currency, partyTotalUsd, baggageIncluded:true, taxesIncluded:true, airlineDirectRechecked:true, conditions. Include quoteChecks.hotel: guests, checkIn, checkOut, nights, currency, stayTotalUsd, taxesAndFeesIncluded:true, property, room, cancellation. Values must match the candidate dates and itemized amounts; flight/hotel evidence must support them. Other expenses remain estimates, so totalUsd is a projected budget, not a bookable package total. If any quote check is unknown, use priceType:estimate and describe it as an unverified lead, not a ranked bargain.
 
 Investigate unusually cheaper date prompts using the actual two-adult controls before quoting savings. Compare long layover options against nonstop alternatives and price the comfort premium. Do not assume the cheapest itinerary is best. Do not present estimates as conservative without supported bounds.
+
+## Mandatory Completion Gate
+
+The top-level discovery run finishes with `npm run portal` followed by `npm run pages:sync`, including partial, blocked, or no-change runs. Verify success/no changes; if sync fails, report the exact failure and do not claim publication. Only generated `docs/` may be committed/pushed.

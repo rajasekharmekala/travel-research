@@ -17,3 +17,7 @@ If all four current hash-bound approvals exist, invoke approved publication. If 
 Use only the configured roles: source, consistency, coverage, opportunities. Coverage audits every one of the 18 destinations and writes the per-destination assessment required by review.md, even when comparison quotes only a shortlist. Do not approve discovery with skipped destinations; explain real blockers and continuation work honestly. Opportunities produces actionable next-research suggestions; it is constructive, not an adversarial-only or prose-style check. Optional suggestions are not unresolved defects. Keep factual uncertainty and unsupported-claim checks under source/consistency. The round cap applies to a whole report/run, not each location.
 
 Suggested setup: schedule after research or trigger manually when a valid draft exists. A delayed research run may be reviewed on the next attempt. Configure each role and model explicitly in the app; this editing session cannot establish reviewer availability or activate schedules.
+
+## Mandatory Final Sync
+
+After the review coordinator completes the execution, including unavailable reviewers or a no-change outcome, run `npm run portal` and `npm run pages:sync`. Independent reviewer workers return receipts only. Verify the docs-only commit/push or disclose the sync failure. Never commit private drafts, receipts or evidence.

@@ -14,3 +14,7 @@ Use assets/dossier-template.json for the dossier extension to the existing repor
 Distinguish regional seasonal climatology from forecasts; discuss daylight, rain, sea conditions, altitude, winter closures, Christmas/New Year schedules and capacity. Assess neighborhoods, experience quality, crowding, flight fatigue, cancellation exposure, budget sensitivity, who would dislike the destination and the strongest competing itinerary.
 
 Checkpoint only after scripts/publish.mjs validation succeeds. Hand off to travel-review; do not self-approve. Retain partial evidence after a blocker, with next action and retry date. Cite weak or missing evidence honestly. No invented price, image, review attempt or runtime identity.
+
+## Mandatory Publication Handoff
+
+Before the task is complete, run `npm run portal` followed by `npm run pages:sync`. The sync rebuilds the public allowlist and commits/pushes only validated `docs/`. Do not push private drafts, captures or reports. If the host runtime lacks SSH or push fails, treat publication as incomplete and report the exact error.

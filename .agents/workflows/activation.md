@@ -18,6 +18,10 @@ No unconfigured fallback. A model picker selection is configuration, not actual 
 
 The remote is public. Keep personal dates, traveler counts, home airports, trip ceiling, immigration and employer details, booking captures, observed prices, reviewer receipts and private dossiers under ignored `local/`. `npm run portal` rebuilds the private report portal and also generates the public-safe homepage and 18 destination index pages in `docs/`. `npm run pages` regenerates only this sanitized export. Do not copy `local/portal` wholesale into docs. No private assessment is currently released. Assessment release needs a separate user-approved, privacy-reviewed public artifact; do not treat travel automation review as public-data approval.
 
+## Pages Sync
+
+After portal builds, run `npm run pages:sync` to publish changed sanitized docs. It commits only `docs/`, only on main, and pushes without force. Confirm SSH authentication is available to the scheduled task runtime. A failed/conflicting push stays a failure; never stage or force-push private `local/` data. This workspace's repository and Pages endpoint are under the Adobe corporate host; the deployed URL redirects to Adobe Okta in the current unauthenticated HTTP check.
+
 ## Local Commands
 
 - `npm run research -- init`: reconcile configured destinations without approving old drafts.

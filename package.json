@@ -11,7 +11,8 @@
     "unschedule-legacy": "node scripts/monitor.mjs uninstall",
     "research": "node scripts/research.mjs",
     "portal": "node scripts/portal.mjs",
-    "pages": "node scripts/build-pages.mjs"
+    "pages": "node scripts/build-pages.mjs",
+    "pages:sync": "node scripts/sync-pages.mjs"
   },
   "engines": { "node": ">=22" }
 }

@@ -10,3 +10,5 @@ Read AGENTS.md, local/trip.json, local/automation.json, research-protocol.md and
 6. Promote only after genuine four-pass approval. Rebuild `node scripts/portal.mjs` after checkpoint, status changes and promotion. Report location, verdict, pending reviews, next action and actual limitations.
 
 If no destination is eligible, inspect `node scripts/research.mjs status` for pending reviews and blockers. Continue only genuine supported work. Analysis refreshes after 30 days or meaningful changes; quotes are historical after 24 hours. Do not reprice every approved dossier every day solely to keep it in the analysis ledger.
+
+After rebuilding the portal, run `npm run pages:sync` to update the public-safe docs output. This publishes only the destination directory pages and homepage; never sync private report artifacts.

@@ -47,6 +47,14 @@ Run `node scripts/research.mjs ready`. Comparison waits until every configured d
 
 New destinations are proposals, not silent trip edits. Record name, rationale, tradeoffs, public sources and saved evidence in a run proposal.json. Run `node scripts/research.mjs propose <run/proposal.json>`. Only the user may accept a proposal by updating local/trip.json, expand scope or increase the ceiling. Existing history remains, and changed trip settings require fresh review-bound assessments.
 
+## Public Pages Sync
+
+After a checkpoint, promotion or comparison publication, run `npm run portal` and then `npm run pages:sync`. The public builder exports destination names and credited local imagery only, not the private dossier or trip settings. The sync script is constrained to branch `main`, the configured origin and paths under `docs/`; it makes a docs-only commit and a non-force push. A push conflict is an error; do not force push, reset or include `local/`. Scheduled runtimes must have the user's normal Git SSH authorization. The corporate Pages URL may require Adobe Okta authentication. If sync cannot authenticate or push, preserve the local sanitized docs output and disclose it was not synced.
+
+## Mandatory Automation Sync
+
+After every completed top-level researcher/coordinator automation execution, run `npm run portal` and `npm run pages:sync`, including proposal, blocked and no-change executions. Independent reviewer workers return their receipts to the coordinator and do not publish or push. The sync rebuilds the allowlisted pages, confirms only manifest-owned files are present, then commits only `docs/` and non-force pushes `main` to the configured origin. This docs-only automation commit is explicitly authorized. No other files, local state, evidence, drafts or private reports may be committed/pushed by an automated task. Treat any authentication, policy, validation or push error as a failed publication; report it and keep the private work intact. Never claim a push occurred without successful command output.
+
 ## Delivery
 
-`node scripts/portal.mjs` builds local/portal/index.html and destination pages. All personal data, evidence and HTML stay under ignored local/. No external hosting, email, Git commits or scheduler registration is authorized by these files. Config does not register tasks. Record what the host actually scheduled and dispatched, not what documentation intended.
+`node scripts/portal.mjs` builds the private portal and sanitized public docs. All personal data, evidence and private HTML stay under ignored local/. The sole Git operation authorized for automation is the validated docs-only commit/push performed by `npm run pages:sync`; no other paths may be committed or pushed. Configuring workflows does not register tasks. Record what the host actually scheduled and dispatched, not what documentation intended.

@@ -9,4 +9,6 @@ Read AGENTS.md, local/trip.json, local/automation.json, research-protocol.md and
 5. Run `node scripts/research.mjs validate-comparison <run/draft.json>`. Dispatch genuine four-pass travel-review, apply feedback within the report's four-round cap, and revalidate every changed draft/evidence bundle. Receipts require distinct context IDs and actual identity evidence. Missing reviewers stay pending or separately unapproved policy-eligible best effort.
 6. Publish using `node scripts/publish.mjs publish <run/draft.json>`, then rebuild the portal. The publication command rechecks all dossier hashes/receipts and fresh comparison quotes. Record source and dossier dependencies, reasoning, pushback, limitations and a future refresh plan.
 
+After publishing a reviewed comparison and rebuilding the portal, run `npm run pages:sync`. The public pages exporter never includes the private comparison, quotes or traveler details.
+
 Additional locations go through destination-opportunities and require user acceptance before research-set expansion. A partial comparison may inform research priorities but cannot become the final reviewed recommendation.
