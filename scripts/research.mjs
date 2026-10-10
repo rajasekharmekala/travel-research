@@ -23,7 +23,7 @@ export async function main(args = process.argv.slice(2)) {
       state.reviewPolicySha256 = digest(config.reviewPolicy);
       let value;
       if (action === 'init') value = { destinations: Object.keys(state.destinations).length, tripSha256: state.tripSha256 };
-      if (action === 'claim') value = claimDestination(state, { runId: input, leaseMinutes: argument === undefined ? 120 : Number(argument) });
+      if (action === 'claim') value = claimDestination(state, { runId: input, leaseMinutes: argument === undefined ? 120 : Number(argument), id: args[3] ?? null });
       if (action === 'checkpoint') {
         const request = json(runFile(local, input));
         if (request.outcome === 'awaiting_review') {
@@ -67,7 +67,7 @@ export async function main(args = process.argv.slice(2)) {
         result = validateComparisonInputs(artifact.report, state, trip, config, local);
       }
     }
-  } else throw new Error('Use init | claim <run-id> [lease-minutes] | checkpoint <run/checkpoint.json> | revise <run/revision.json> | promote <run/draft.json> | propose <run/proposal.json> | status | ready | validate-comparison <run/draft.json>');
+  } else throw new Error('Use init | claim <run-id> [lease-minutes] [destination-id] | checkpoint <run/checkpoint.json> | revise <run/revision.json> | promote <run/draft.json> | propose <run/proposal.json> | status | ready | validate-comparison <run/draft.json>');
   console.log(JSON.stringify(result, null, 2));
   return result;
 }

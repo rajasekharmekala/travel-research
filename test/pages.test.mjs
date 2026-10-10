@@ -50,7 +50,7 @@ test('public research shows dates, costs, sources and action plans without trip-
   const html = renderPublicDossier({ destination: { name: 'Austria and Germany' }, publicDossier: dossier });
   for (const hidden of ['honeymoon', 'local/', '?passport=', '?sort=']) assert.equal(html.includes(hidden), false, hidden);
   for (const shown of ['SFO', '2026-12-23', 'USD 7,000', 'H-1B', 'for our trip', 'Party cost: USD 6,880', 'KAYAK flight search (SFO to VIE)', 'example.com']) assert.ok(html.includes(shown), shown);
-  for (const required of ['Value rating: Not yet rated', 'Your Action Plan', 'Day 1', 'Hotel fees unknown', 'Live verification unavailable', 'Provisional review', 'Decision summary', 'not classified']) assert.ok(html.includes(required), required);
+  for (const required of ['Destination verdict: conditional', 'Option-level value evidence is incomplete', 'Price confidence: Estimate only', 'Your Action Plan', 'Day 1', 'Hotel fees unknown', 'Live verification unavailable', 'Provisional review', 'Decision summary', 'not classified']) assert.ok(html.includes(required), required);
   assert.equal(html.includes('<script>'), false);
   assert.equal(html.includes('>decision<'), false);
 });
@@ -67,7 +67,7 @@ test('rated public research uses sidecar labels, cost basis and credited section
     images: { decision: { file: 'example.jpg', alt: 'Test alt', title: 'File:Example.jpg', artist: 'Test Artist', license: 'CC BY 4.0', licenseUrl: 'https://creativecommons.org/licenses/by/4.0/', sourceUrl: 'https://commons.wikimedia.org/wiki/File:Example.jpg' } }
   };
   const html = renderPublicDossier({ destination: { name: 'Austria and Germany' }, publicDossier: projectPublicDossier(report, trip, 'Provisional review', [], presentation) });
-  for (const shown of ['Value rating: Conditional', 'Price confidence: Partly observed', 'partly observed', 'Observed fare plus estimated bag.', 'Meals', 'No basis recorded for this line.', 'src="../media/example.jpg"', 'Image: Test Artist, CC BY 4.0', 'Example.jpg on Wikimedia Commons', 'Decision summary']) assert.ok(html.includes(shown), shown);
+  for (const shown of ['Value rating: Conditional', 'Price confidence: Partly observed', 'partly observed', 'Observed fare plus estimated bag.', 'Meals', 'No calculation recorded; this allocation is not a verified market cost.', 'src="../media/example.jpg"', 'Image: Test Artist, CC BY 4.0', 'Example.jpg on Wikimedia Commons', 'Decision summary']) assert.ok(html.includes(shown), shown);
 });
 
 test('presentation sidecar must match the draft, use enumerated labels and reference local media only', () => {
@@ -114,4 +114,15 @@ test('page names are readable, unique and reject collisions', () => {
   assert.equal(pageSlug('Türkiye'), 'turkiye');
   assert.equal(pageSlug('Morocco'), 'morocco');
   assert.throws(() => pageSlugs([{ id: 'a', name: 'Japan' }, { id: 'b', name: 'japan!' }]), /is used by/);
+});
+
+test('public dossier exposes native ratings, calculations, exact safe search links and visit significance', () => {
+  const hotel = 'https://www.hilton.com/en/book/reservation/rooms/?ctyhocn=SJDMXHX&arrivalDate=2026-12-23&departureDate=2027-01-02&room1NumAdults=2&email=private@example.com&token=SECRET&sort=best';
+  const report = {
+    candidates: [{ destination: 'Los Cabos', priceType: 'estimate', observedAt: '2026-10-10T12:00:00Z', depart: '2026-12-23', return: '2027-01-02', travelers: 2, totalUsd: 1700, costs: { hotels: 1700 }, reason: 'Short flight.', compromises: 'Corridor lodging.', flightDetails: 'Nonstop lead.', hotelDetails: 'Ten nights.', sources: [hotel], ratings: { value: { label: 'Conditional', rationale: 'Good access, but unresolved fees weaken value.' }, priceConfidence: { label: 'Partly observed', rationale: 'Room baseline observed; extras estimated.' } }, pricingEffort: { attempts: [{ kind: 'hotels', channel: 'direct', source: hotel, observedAt: '2026-10-10T12:00:00Z', searchContext: 'Two adults, ten nights, Dec 23 to Jan 2.', result: 'Room 1400 plus 300 tax.', evidence: 'hotel.txt' }], basis: { hotels: { calculation: '1400 room + 300 taxes = 1700 party total', assumptions: 'No gala charge verified.', evidence: ['hotel.txt'] } } } }],
+    dossier: { thesis: 'Good winter access. Fees and corridor transfers change the recommendation.', verdict: 'conditional', itineraryCandidateIndex: 0, sections: [{ key: 'decision', text: 'Conditional lead.', sources: ['https://example.com/overview'], evidence: ['hotel.txt'], paragraphs: [{ text: 'Named room baseline observed.', sources: [hotel] }] }], itinerary: [{ date: '2026-12-24', location: 'San Jose', plan: 'Art district.', lodging: 'Corridor hotel.', transfer: '45 minutes, estimate.', weatherAlternative: 'Indoor gallery if open.', evidence: ['hotel.txt'], visits: [{ name: 'Art district', significance: 'A local gallery district, not a beach resort.', whyVisit: 'Adds culture to a coastal itinerary.', duration: 'Two hours', logistics: 'Holiday opening remains unconfirmed.', cost: 'No admission quote.', sources: ['https://example.com/art-district'] }] }], unresolved: ['Fees'], nextChecks: ['Verify gala charge.'] }, limitations: []
+  };
+  const html = renderPublicDossier({ destination: { name: 'Los Cabos' }, publicDossier: projectPublicDossier(report, {}, 'Provisional') });
+  for (const expected of ['Fees and corridor transfers change the recommendation.', 'Value rating: Conditional', '1400 room + 300 taxes = 1700 party total', 'No gala charge verified.', 'Search Evidence And Rejected Leads', 'Two adults, ten nights', 'arrivalDate=2026-12-23', 'room1NumAdults=2', 'Why it matters:', 'Adds culture to a coastal itinerary.', 'https://example.com/art-district', '2026-12-24']) assert.ok(html.includes(expected), expected);
+  for (const hidden of ['private@example.com', 'SECRET', 'email=', 'token=', 'sort=', 'hotel.txt', 'Not yet rated']) assert.equal(html.includes(hidden), false, hidden);
 });

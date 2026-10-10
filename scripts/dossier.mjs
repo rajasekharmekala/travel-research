@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { digest, destinationId } from './research-store.mjs';
+import { valueLabels, priceConfidenceLabels, costBases } from './presentation.mjs';
 
 export const sectionKeys = ['decision', 'entry_and_transit', 'climate_and_weather', 'experiences_and_closures', 'neighborhoods_and_lodging', 'transport_and_fatigue', 'budget_and_value', 'risks_and_cancellation', 'alternatives_and_pushback'];
 const text = value => typeof value === 'string' && value.trim().length > 0;
@@ -9,7 +10,15 @@ const publicUrl = value => {
 };
 
 export function dossierEvidence(report) {
-  return [...new Set([...(report.dossier?.sections ?? []).flatMap(section => section.evidence ?? []), ...(report.dossier?.itinerary ?? []).flatMap(day => day.evidence ?? [])])];
+  return [...new Set([
+    ...(report.dossier?.sections ?? []).flatMap(section => [...(section.evidence ?? []), ...(section.paragraphs ?? []).flatMap(paragraph => paragraph.evidence ?? [])]),
+    ...(report.dossier?.itinerary ?? []).flatMap(day => [...(day.evidence ?? []), ...(day.visits ?? []).flatMap(visit => visit.evidence ?? [])]),
+    ...(report.candidates ?? []).flatMap(candidate => [
+      ...Object.values(candidate.costBasis ?? {}).flatMap(line => line.evidence ?? []),
+      ...(candidate.pricingEffort?.attempts ?? []).map(attempt => attempt.evidence).filter(Boolean),
+      ...Object.values(candidate.pricingEffort?.basis ?? {}).flatMap(line => line.evidence ?? [])
+    ])
+  ])];
 }
 
 export function validateDossier(report, trip, directory, now = new Date(), { allowAppendedDestinations = false } = {}) {
@@ -42,6 +51,45 @@ export function validateDossier(report, trip, directory, now = new Date(), { all
     if (!resolved.startsWith(path.resolve(directory) + path.sep) || !fs.existsSync(resolved) || !fs.realpathSync(resolved).startsWith(fs.realpathSync(directory) + path.sep) || !fs.statSync(resolved).isFile() || fs.statSync(resolved).size === 0) throw new Error('Dossier evidence must stay inside its run directory');
   }
   return dossier;
+}
+
+export function validateDossierQuality(report) {
+  if (report.job !== 'destination') return;
+  const evidenceFiles = new Set(report.browser?.evidenceFiles ?? []);
+  const sourced = item => Array.isArray(item?.sources) && item.sources.length > 0 && item.sources.every(publicUrl)
+    && Array.isArray(item.evidence) && item.evidence.length > 0 && item.evidence.every(file => evidenceFiles.has(file));
+  for (const candidate of report.candidates ?? []) {
+    const ratings = candidate.ratings;
+    if (![...valueLabels, 'Not assessable'].includes(ratings?.value?.label) || !text(ratings.value.rationale)
+      || !priceConfidenceLabels.includes(ratings?.priceConfidence?.label) || !text(ratings.priceConfidence.rationale)
+      || !text(ratings.value.comparison) || !text(ratings.value.changeCondition)) throw new Error('New dossier requires native explained value and price-confidence ratings, comparison and change condition');
+    if (candidate.priceType === 'estimate' && ratings.priceConfidence.label === 'Observed snapshot') throw new Error('Estimated candidate cannot claim fully observed price confidence');
+    for (const [key, amount] of Object.entries(candidate.costs ?? {})) {
+      const line = candidate.costBasis?.[key];
+      if (![...costBases, 'unsupported budget scenario'].includes(line?.basis) || !text(line.calculation) || !text(line.assumptions) || !sourced(line)) throw new Error(`New dossier requires sourced calculation and assumptions for ${key}`);
+      if (![line.quantity, line.unitUsd, line.adjustmentsUsd, line.totalUsd].every(Number.isFinite)
+        || line.quantity < 0 || line.unitUsd < 0 || Math.abs(line.quantity * line.unitUsd + line.adjustmentsUsd - line.totalUsd) > 0.01
+        || Math.abs(line.totalUsd - amount) > 0.01) throw new Error(`Cost arithmetic must reconcile quantity * unitUsd + adjustmentsUsd with ${key} party total`);
+      if (line.basis !== 'observed' && (!Number.isFinite(line.rangeUsd?.low) || !Number.isFinite(line.rangeUsd?.high)
+        || line.rangeUsd.low < 0 || line.rangeUsd.low > amount || line.rangeUsd.high < amount || !text(line.sensitivity))) throw new Error(`Uncertain ${key} requires a justified rangeUsd and sensitivity`);
+    }
+    if (Object.values(candidate.costBasis ?? {}).some(line => line.basis === 'unsupported budget scenario')
+      && (ratings.value.label !== 'Not assessable' || ratings.priceConfidence.label === 'Observed snapshot')) throw new Error('Unsupported budget scenario cannot support a comparative value rating or observed confidence');
+  }
+  for (const section of report.dossier?.sections ?? []) {
+    if (!Array.isArray(section.paragraphs) || !section.paragraphs.length
+      || section.paragraphs.some(paragraph => !text(paragraph.text) || !sourced(paragraph))) throw new Error(`New dossier section ${section.key} requires claim-level sourced paragraphs`);
+  }
+  for (const day of report.dossier?.itinerary ?? []) {
+    if (!Array.isArray(day.visits)) throw new Error('New itinerary day requires visits or an explained travel-only day');
+    if (!day.visits.length && !text(day.travelDayReason)) throw new Error('Empty itinerary day requires travelDayReason');
+    for (const visit of day.visits) {
+      if (!['name', 'significance', 'whyVisit', 'duration', 'logistics', 'cost'].every(key => text(visit[key])) || !sourced(visit)) throw new Error('Itinerary visit requires significance, whyVisit, duration, logistics, cost and sources');
+    }
+  }
+  if (!Array.isArray(report.dossier?.actions) || !report.dossier.actions.length
+    || report.dossier.actions.some(action => !['High', 'Medium', 'Low'].includes(action.priority)
+      || !['check', 'why', 'how', 'decisionImpact'].every(key => text(action[key])))) throw new Error('New dossier requires prioritized actions with why, how and decisionImpact');
 }
 
 export function comparisonReadiness(state, trip, now = new Date()) {

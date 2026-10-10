@@ -18,12 +18,16 @@ export function reconcile(state, trip) {
   return next;
 }
 
-export function claimDestination(state, { runId, now = new Date().toISOString(), leaseMinutes = 120 }) {
+export function claimDestination(state, { runId, id = null, now = new Date().toISOString(), leaseMinutes = 120 }) {
   if (!runId || !Number.isFinite(leaseMinutes) || leaseMinutes <= 0 || !Number.isFinite(Date.parse(now))) throw new Error('Valid run ID, time, and positive lease duration required');
   const records = Object.values(state.destinations).filter(record => record.active);
   const existing = records.find(record => record.lease?.runId === runId && Date.parse(record.lease.expiresAt) > Date.parse(now));
-  if (existing) return existing;
+  if (existing) {
+    if (id && existing.id !== id) throw new Error('Run already claims a different destination');
+    return existing;
+  }
   const eligible = records.filter(record => {
+    if (id && record.id !== id) return false;
     if (record.lease && Date.parse(record.lease.expiresAt) > Date.parse(now)) return false;
     if (record.status === 'awaiting_review') return false;
     if (record.retryAfter && Date.parse(record.retryAfter) > Date.parse(now)) return false;

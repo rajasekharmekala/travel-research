@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-export const valueLabels = ['Strong fit', 'Conditional', 'Weak fit', 'Not recommended'];
+export const valueLabels = ['Strong fit', 'Conditional', 'Weak fit', 'Not recommended', 'Not assessable'];
 export const priceConfidenceLabels = ['Observed snapshot', 'Partly observed', 'Estimate only'];
 export const costBases = ['observed', 'partly observed', 'derived', 'estimate'];
 const imageFilePattern = /^[a-z0-9-]+\.(jpg|png|webp)$/;

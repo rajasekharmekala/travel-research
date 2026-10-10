@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { hash, validate, validateReviews, evidenceHash } from './publish.mjs';
-import { comparisonReadiness } from './dossier.mjs';
+import { comparisonReadiness, validateDossierQuality } from './dossier.mjs';
 import { digest } from './research-store.mjs';
 
 export function runFile(local, filename) {
@@ -17,7 +17,10 @@ export function readArtifact(local, filename, config, trip, { reviewed = false, 
   const report = JSON.parse(bytes);
   const directory = path.dirname(resolved);
   validate(report, config, trip, directory, now, { historicalPrices });
-  if (requirePricingEffort) validatePricingEffort(report, directory);
+  if (requirePricingEffort) {
+    validatePricingEffort(report, directory);
+    validateDossierQuality(report);
+  }
   const draftSha256 = hash(bytes);
   const evidenceSha256 = evidenceHash(report, directory);
   let receipts = [];

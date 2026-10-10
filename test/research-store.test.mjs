@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { reconcile, claimDestination, checkpointDestination, transaction, destinationId, recordReviewRound, requestRevision } from '../scripts/research-store.mjs';
 import { promoteDestination, validatePricingEffort } from '../scripts/research-artifacts.mjs';
+import { validateDossierQuality, dossierEvidence } from '../scripts/dossier.mjs';
 
 const trip = { destinations: [{ name: 'Japan' }, { name: 'Portugal' }] };
 const now = '2026-10-09T12:00:00Z';
@@ -131,4 +132,45 @@ test('estimate intake requires direct and aggregator checks with hashed evidence
     unsupportedBasis.candidates[0].pricingEffort.basis.flights.evidence = ['unrelated.txt'];
     assert.throws(() => validatePricingEffort(unsupportedBasis, directory), /traceable flights calculation/);
   } finally { await rm(directory, { recursive: true, force: true }); }
+});
+
+test('new dossier quality requires explained ratings, reconciled costs, meaningful visits and decision actions', () => {
+  const citation = { sources: ['https://example.com/place'], evidence: ['capture.txt'] };
+  const report = {
+    job: 'destination', browser: { evidenceFiles: ['capture.txt'] },
+    candidates: [{ priceType: 'estimate', costs: { hotels: 1700 }, ratings: {
+      value: { label: 'Conditional', rationale: 'Transfer costs may erase savings.', comparison: 'Beachfront costs more but reduces transfers.', changeCondition: 'Choose beachfront if inclusive totals converge.' },
+      priceConfidence: { label: 'Partly observed', rationale: 'Room baseline observed; fees incomplete.' }
+    }, costBasis: { hotels: { basis: 'derived', calculation: '10 nights * 140 + 300 tax', assumptions: 'No gala charge verified.', quantity: 10, unitUsd: 140, adjustmentsUsd: 300, totalUsd: 1700, rangeUsd: { low: 1700, high: 2000 }, sensitivity: 'Unverified gala fee may add up to 300 in this synthetic scenario.', ...citation } } }],
+    dossier: { sections: [{ key: 'decision', paragraphs: [{ text: 'Sourced analysis.', ...citation }] }], itinerary: [{ visits: [{ name: 'Gallery district', significance: 'Local arts concentration.', whyVisit: 'Adds culture beyond the resort.', duration: 'Two hours', logistics: 'Confirm holiday opening.', cost: 'No admission quote.', ...citation }] }], actions: [{ priority: 'High', check: 'Verify gala fee', why: 'It could erase savings.', how: 'Check the direct room rate terms.', decisionImpact: 'Reject this property if inclusive total exceeds the alternative.' }] }
+  };
+  assert.doesNotThrow(() => validateDossierQuality(report));
+  const withoutRating = structuredClone(report);
+  delete withoutRating.candidates[0].ratings;
+  assert.throws(() => validateDossierQuality(withoutRating), /native explained/);
+  const wrongTotal = structuredClone(report);
+  wrongTotal.candidates[0].costBasis.hotels.unitUsd = 150;
+  assert.throws(() => validateDossierQuality(wrongTotal), /arithmetic/);
+  const missingSignificance = structuredClone(report);
+  delete missingSignificance.dossier.itinerary[0].visits[0].significance;
+  assert.throws(() => validateDossierQuality(missingSignificance), /significance/);
+  const missingCitation = structuredClone(report);
+  missingCitation.dossier.sections[0].paragraphs[0].sources = [];
+  assert.throws(() => validateDossierQuality(missingCitation), /claim-level/);
+  const missingImpact = structuredClone(report);
+  delete missingImpact.dossier.actions[0].decisionImpact;
+  assert.throws(() => validateDossierQuality(missingImpact), /decisionImpact/);
+  const unsupported = structuredClone(report);
+  unsupported.candidates[0].costBasis.hotels.basis = 'unsupported budget scenario';
+  assert.throws(() => validateDossierQuality(unsupported), /Unsupported budget scenario/);
+  unsupported.candidates[0].ratings.value.label = 'Not assessable';
+  assert.doesNotThrow(() => validateDossierQuality(unsupported));
+  const travelDay = structuredClone(report);
+  travelDay.dossier.itinerary[0].visits = [];
+  assert.throws(() => validateDossierQuality(travelDay), /travelDayReason/);
+  travelDay.dossier.itinerary[0].travelDayReason = 'Flight arrival and hotel transfer.';
+  assert.doesNotThrow(() => validateDossierQuality(travelDay));
+  assert.deepEqual(dossierEvidence(report), ['capture.txt']);
+  report.dossier.itinerary[0].visits[0].evidence = ['visit.txt'];
+  assert.ok(dossierEvidence(report).includes('visit.txt'));
 });

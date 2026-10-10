@@ -15,26 +15,72 @@
     "verificationMethod": "regular-canvas",
     "isolation": "unknown",
     "isolationEvidence": null,
-    "safeguards": { "noLogin": true, "noAccountAccess": true, "noProfileInspection": true, "stopOnAuthentication": true }
+    "safeguards": { "noLogin": true, "noAccountAccess": true, "noProfileInspection": true, "stopOnAuthentication": true },
+    "evidenceFiles": []
   },
-  "candidates": [],
+  "candidates": [{
+    "destination": "EXACT_CONFIGURED_DESTINATION_NAME",
+    "origin": "AUTHORIZED_ORIGIN",
+    "depart": "AUTHORIZED_DEPART_DATE",
+    "return": "AUTHORIZED_RETURN_DATE",
+    "travelers": 2,
+    "currency": "USD",
+    "priceType": "estimate",
+    "observedAt": null,
+    "costs": { "flights": 0, "hotels": 0, "meals": 0, "groundTransport": 0, "activities": 0, "insuranceAndContingency": 0 },
+    "totalUsd": 0,
+    "flightDetails": "REPLACE_WITH_ROUTE_TIMES_BAGGAGE_FARE_TERMS",
+    "hotelDetails": "REPLACE_WITH_PROPERTY_ROOM_NIGHTS_TAXES_CANCELLATION",
+    "reason": "REPLACE_WITH_EVIDENCE_BACKED_OPTION_ARGUMENT",
+    "compromises": "REPLACE_WITH_REAL_TRADEOFFS",
+    "eligibility": "REPLACE_WITH_DOCUMENT_ASSESSMENT",
+    "recommendation": "REPLACE_WITH_CONDITIONAL_RECOMMENDATION_NOT_BUY_PERMISSION",
+    "sources": [],
+    "evidence": [],
+    "ratings": {
+      "value": { "label": "Not assessable", "rationale": "REPLACE_WITH_REASONED_VALUE_ASSESSMENT", "comparison": "REPLACE_WITH_SOURCED_ALTERNATIVE_AND_TRADEOFF", "changeCondition": "REPLACE_WITH_RESULT_THAT_CHANGES_LABEL" },
+      "priceConfidence": { "label": "Estimate only", "rationale": "REPLACE_WITH_OBSERVED_VS_ESTIMATED_COMPONENTS" }
+    },
+    "costBasis": {
+      "flights": { "basis": "estimate", "calculation": "REPLACE_WITH_PARTY_ARITHMETIC", "assumptions": "REPLACE_WITH_DATES_UNITS_INCLUSIONS", "quantity": 0, "unitUsd": 0, "adjustmentsUsd": 0, "totalUsd": 0, "rangeUsd": { "low": 0, "high": 0 }, "sensitivity": "REPLACE_WITH_EVIDENCE_BACKED_RANGE_REASON", "sources": [], "evidence": [] },
+      "hotels": { "basis": "estimate", "calculation": "REPLACE_WITH_NIGHTS_ROOMS_TAX_ARITHMETIC", "assumptions": "REPLACE_WITH_FEES_CANCELLATION", "quantity": 0, "unitUsd": 0, "adjustmentsUsd": 0, "totalUsd": 0, "rangeUsd": { "low": 0, "high": 0 }, "sensitivity": "REPLACE_WITH_EVIDENCE_BACKED_RANGE_REASON", "sources": [], "evidence": [] },
+      "meals": { "basis": "estimate", "calculation": "REPLACE_WITH_DAYS_TRAVELERS_INCLUDED_MEALS", "assumptions": "REPLACE_WITH_MEAL_BASELINE", "quantity": 0, "unitUsd": 0, "adjustmentsUsd": 0, "totalUsd": 0, "rangeUsd": { "low": 0, "high": 0 }, "sensitivity": "REPLACE_WITH_EVIDENCE_BACKED_RANGE_REASON", "sources": [], "evidence": [] },
+      "groundTransport": { "basis": "estimate", "calculation": "REPLACE_WITH_TRANSFER_AND_LOCAL_TRANSPORT_ARITHMETIC", "assumptions": "REPLACE_WITH_ROUTE_UNITS", "quantity": 0, "unitUsd": 0, "adjustmentsUsd": 0, "totalUsd": 0, "rangeUsd": { "low": 0, "high": 0 }, "sensitivity": "REPLACE_WITH_EVIDENCE_BACKED_RANGE_REASON", "sources": [], "evidence": [] },
+      "activities": { "basis": "estimate", "calculation": "REPLACE_WITH_PRICED_VISITS_AND_TRAVELERS", "assumptions": "REPLACE_WITH_ADMISSION_TOUR_TERMS", "quantity": 0, "unitUsd": 0, "adjustmentsUsd": 0, "totalUsd": 0, "rangeUsd": { "low": 0, "high": 0 }, "sensitivity": "REPLACE_WITH_EVIDENCE_BACKED_RANGE_REASON", "sources": [], "evidence": [] },
+      "insuranceAndContingency": { "basis": "estimate", "calculation": "REPLACE_WITH_EXPLAINED_RESERVE_POLICY", "assumptions": "REPLACE_WITH_WHAT_RESERVE_COVERS_NOT_A_QUOTE", "quantity": 0, "unitUsd": 0, "adjustmentsUsd": 0, "totalUsd": 0, "rangeUsd": { "low": 0, "high": 0 }, "sensitivity": "REPLACE_WITH_DOWNSIDE_SCENARIO", "sources": [], "evidence": [] }
+    },
+    "pricingEffort": {
+      "attempts": [],
+      "basis": { "flights": { "calculation": "", "assumptions": "", "evidence": [] }, "hotels": { "calculation": "", "assumptions": "", "evidence": [] } }
+    }
+  }],
   "dossier": {
     "verdict": "conditional",
-    "thesis": "REPLACE_WITH_SUPPORTED_THESIS",
+    "thesis": "REPLACE_WITH_SUPPORTED_FULL_ARGUMENT",
     "unresolved": [],
     "nextChecks": [],
+    "actions": [{ "priority": "High", "check": "REPLACE_WITH_CHECK", "why": "REPLACE_WITH_RISK", "how": "REPLACE_WITH_EXACT_SOURCE_AND_METHOD", "decisionImpact": "REPLACE_WITH_WHAT_EACH_RESULT_CHANGES" }],
     "itineraryCandidateIndex": 0,
     "sections": [
-      { "key": "decision", "text": "", "sources": [], "evidence": [], "observedAt": null },
-      { "key": "entry_and_transit", "text": "", "sources": [], "evidence": [], "observedAt": null },
-      { "key": "climate_and_weather", "text": "", "sources": [], "evidence": [], "observedAt": null, "weatherBasis": "climatology", "regionalVariation": "", "forecastLimitations": "" },
-      { "key": "experiences_and_closures", "text": "", "sources": [], "evidence": [], "observedAt": null },
-      { "key": "neighborhoods_and_lodging", "text": "", "sources": [], "evidence": [], "observedAt": null },
-      { "key": "transport_and_fatigue", "text": "", "sources": [], "evidence": [], "observedAt": null },
-      { "key": "budget_and_value", "text": "", "sources": [], "evidence": [], "observedAt": null },
-      { "key": "risks_and_cancellation", "text": "", "sources": [], "evidence": [], "observedAt": null },
-      { "key": "alternatives_and_pushback", "text": "", "sources": [], "evidence": [], "observedAt": null }
+      { "key": "decision", "text": "", "paragraphs": [{ "text": "", "sources": [], "evidence": [] }], "sources": [], "evidence": [], "observedAt": null },
+      { "key": "entry_and_transit", "text": "", "paragraphs": [{ "text": "", "sources": [], "evidence": [] }], "sources": [], "evidence": [], "observedAt": null },
+      { "key": "climate_and_weather", "text": "", "paragraphs": [{ "text": "", "sources": [], "evidence": [] }], "sources": [], "evidence": [], "observedAt": null, "weatherBasis": "climatology", "regionalVariation": "", "forecastLimitations": "" },
+      { "key": "experiences_and_closures", "text": "", "paragraphs": [{ "text": "", "sources": [], "evidence": [] }], "sources": [], "evidence": [], "observedAt": null },
+      { "key": "neighborhoods_and_lodging", "text": "", "paragraphs": [{ "text": "", "sources": [], "evidence": [] }], "sources": [], "evidence": [], "observedAt": null },
+      { "key": "transport_and_fatigue", "text": "", "paragraphs": [{ "text": "", "sources": [], "evidence": [] }], "sources": [], "evidence": [], "observedAt": null },
+      { "key": "budget_and_value", "text": "", "paragraphs": [{ "text": "", "sources": [], "evidence": [] }], "sources": [], "evidence": [], "observedAt": null },
+      { "key": "risks_and_cancellation", "text": "", "paragraphs": [{ "text": "", "sources": [], "evidence": [] }], "sources": [], "evidence": [], "observedAt": null },
+      { "key": "alternatives_and_pushback", "text": "", "paragraphs": [{ "text": "", "sources": [], "evidence": [] }], "sources": [], "evidence": [], "observedAt": null }
     ],
-    "itinerary": []
+    "itinerary": [{
+      "date": "AUTHORIZED_DATE",
+      "location": "REPLACE_WITH_BASE",
+      "plan": "REPLACE_WITH_ORDERED_DAY_PLAN",
+      "lodging": "REPLACE_WITH_PRICED_PROPERTY_AND_NIGHT",
+      "transfer": "REPLACE_WITH_ROUTING_TIME_AND_COST_BASIS",
+      "weatherAlternative": "REPLACE_WITH_FEASIBLE_ALTERNATIVE",
+      "evidence": [],
+      "visits": [{ "name": "REPLACE_WITH_PLACE", "significance": "REPLACE_WITH_WHY_FAMOUS_OR_IMPORTANT", "whyVisit": "REPLACE_WITH_WHY_THIS_VISIT_EARNS_TIME", "duration": "REPLACE_WITH_JUSTIFIED_TIME", "logistics": "REPLACE_WITH_HOURS_BOOKING_SEASONALITY_TRANSPORT", "cost": "REPLACE_WITH_SOURCE_BACKED_COST_OR_EXPLICIT_UNKNOWN", "sources": [], "evidence": [] }]
+    }]
   }
 }
