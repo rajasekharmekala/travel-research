@@ -1,6 +1,6 @@
 # Destination Assessment Automation
 
-Read AGENTS.md, `local/trip.json`, `research-protocol.md`, `.agents/config/reviewer.json`, and `.agents/skills/destination-research/SKILL.md`. Get researcher model selection and execution mode from the actual host invocation; do not require `local/automation.json` or infer runtime routing from a model setting.
+Read AGENTS.md, `local/trip.json`, `research-protocol.md`, `.agents/config/researcher.json`, `.agents/config/reviewer.json`, and `.agents/skills/destination-research/SKILL.md`. Use the researcher config model unless an explicit host override is exposed; otherwise use the default without prompting the user. Get execution mode from the actual host invocation. Do not require `local/automation.json` or infer runtime routing from a model setting.
 
 1. Record actual execution mode, configured model and runtime identity evidence without inventing routing. Check browser consent and safeguards.
 2. Run `node scripts/research.mjs claim <unique-run-id>`. Process one destination per run, thoroughly; repeated runs progress through all configured locations. Do not choose only favorites or mark skipped locations researched.

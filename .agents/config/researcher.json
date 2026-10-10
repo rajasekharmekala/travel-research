@@ -1,0 +1,4 @@
+{
+  "_comment": "Default researcher for discovery and comparison, selected from the current VS Code chat model setting. Explicit host configuration may override it. This is intended configuration, not proof of actual runtime routing; it does not register tasks or change the VS Code model picker.",
+  "model": "azure/AOSCFoundry/ao-sonnet-5-5-sc"
+}

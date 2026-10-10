@@ -5,7 +5,7 @@ description: "Use when deeply researching a configured travel destination, creat
 
 # Destination Research
 
-Read `../../workflows/research-protocol.md` and `../../../AGENTS.md`. Read `local/trip.json`, then claim exactly one eligible destination through `scripts/research.mjs`. Take researcher model and execution mode from the actual host invocation; do not require `local/automation.json`. Never access portfolio or personal wiki during travel research.
+Read `../../workflows/research-protocol.md` and `../../../AGENTS.md`. Read `local/trip.json`, then claim exactly one eligible destination through `scripts/research.mjs`. Read `.agents/config/researcher.json` for the default researcher model; use an explicit host override only when exposed, and otherwise copy the default to `configuredModel` without prompting the user. Take execution mode from the actual host invocation. Configuration is not proof of actual model identity; keep `model` and `modelEvidence` null unless runtime evidence is available. Do not require `local/automation.json`. Never access portfolio or personal wiki during travel research.
 
 Write an evidence-backed dossier, not a generic travel guide. Assess all origin airports and date windows; deeply price at least one exact-date option for both travelers and explain rejected routes/windows. Save rendered browser text with exact search context. Separate observed party totals from estimates, include all hotel nights and fees, baggage, meals, transfers, activities and contingency. Recheck airline-direct totals without buying. Record alternative flight/hotel combinations and why the preferred combination wins.
 

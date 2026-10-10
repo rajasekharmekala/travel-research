@@ -3,7 +3,7 @@
   "status": "partial",
   "destinationId": "COPY_FROM_CLAIM",
   "tripSha256": "COPY_FROM_CLAIM_STATE",
-  "configuredModel": "COPY_EXPLICIT_APP_CONFIGURATION",
+  "configuredModel": "COPY_RESEARCHER_CONFIG_MODEL_OR_EXPLICIT_HOST_OVERRIDE",
   "model": null,
   "modelEvidence": null,
   "executionMode": "unknown",

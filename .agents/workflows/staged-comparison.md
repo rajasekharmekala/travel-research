@@ -1,6 +1,6 @@
 # Reviewed Comparison Automation
 
-Read `AGENTS.md`, `local/trip.json`, `research-protocol.md`, and `.agents/skills/travel-comparison/SKILL.md`. Use the actual host invocation for researcher model and execution mode; do not require `local/automation.json`.
+Read `AGENTS.md`, `local/trip.json`, `research-protocol.md`, `.agents/config/researcher.json`, and `.agents/skills/travel-comparison/SKILL.md`. Use the researcher config model unless an explicit host override is exposed; otherwise use the default without prompting the user. Use the actual host invocation for execution mode, not as a requirement to identify the configured model. Do not require `local/automation.json`; actual model identity still requires runtime evidence.
 
 1. Run `node scripts/research.mjs ready`. If ready is false, save local/status/comparison.json with actual pending/stale/invalid IDs, reasons, observation time and next actions. Do not produce a final ranking prematurely; leave the reviewed latest unchanged.
 2. Freeze comparisonInputs as `{id,draftSha256,evidenceSha256}` for every configured destination and copy current tripSha256. Read their reviewed dossiers, including not_recommended verdicts. Current 30-day analysis may contain historical 24-hour quotes; do not treat them as current offers.

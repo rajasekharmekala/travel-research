@@ -1,6 +1,6 @@
 # Host App Activation
 
-The host app is the source of truth for schedules, selected models, and task registration. The repository does not require `local/automation.json`; obtain run settings from the host invocation and never treat configured settings as runtime evidence.
+The host app is the source of truth for schedules, actual invocations, and task registration. `.agents/config/researcher.json` owns the default researcher model; `.agents/config/reviewer.json` owns reviewer policy. An explicit exposed host researcher override takes precedence; otherwise use the default without asking the user to identify the selected model. The repository does not require `local/automation.json`. Never treat configured settings as runtime evidence, and do not imply that config files switch the host model or register tasks.
 
 ## Reviewer Dispatch
 
@@ -8,7 +8,7 @@ At runtime, attempt genuine inline dispatch using the exact model in `.agents/co
 
 ## Research Tasks
 
-Configure discovery and comparison schedules and explicit researcher deployments in the host app. Prompts should read `AGENTS.md` and run `.agents/workflows/destination-assessment.md` or `.agents/workflows/staged-comparison.md` as appropriate. Repository instructions do not create or register host tasks. Keep the jobs independent: discovery advances one destination per run; comparison waits for reviewed current dossiers. Do not run retired CLI research or launchd jobs.
+Configure discovery and comparison schedules in the host app and select the explicit researcher deployment from `.agents/config/researcher.json` unless intentionally overriding it. Prompts should read `AGENTS.md` and run `.agents/workflows/destination-assessment.md` or `.agents/workflows/staged-comparison.md` as appropriate. Repository instructions do not create or register host tasks. Keep the jobs independent: discovery advances one destination per run; comparison waits for reviewed current dossiers. Do not run retired CLI research or launchd jobs.
 
 ## Review Tasks
 

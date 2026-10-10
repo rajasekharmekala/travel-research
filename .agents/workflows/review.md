@@ -1,6 +1,6 @@
 # Configurable Independent Review
 
-Read `.agents/config/reviewer.json` as the sole owner of reviewer model, passes, round cap, output directory, and failure policy. Read researcher model and execution mode from the actual host invocation; do not require `local/automation.json`. A configured model or task-registration flag is not evidence that dispatch occurred.
+Read `.agents/config/reviewer.json` as the sole owner of reviewer model, passes, round cap, output directory, and failure policy. Read `.agents/config/researcher.json` for the coordinator's default researcher model; an explicit exposed host override takes precedence. Read execution mode from the actual host invocation; do not require `local/automation.json`. A configured model or task-registration flag is not evidence that dispatch occurred.
 
 ## Required Dispatch Attempt
 

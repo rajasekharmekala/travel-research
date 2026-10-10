@@ -1,6 +1,6 @@
 # Staged Travel Research Protocol
 
-Read `AGENTS.md`, `local/trip.json`, this workflow, the assigned skill, and `.agents/config/reviewer.json` when review is required. Model selection, schedule, and execution mode come from the actual host task invocation; `local/automation.json` is not required or used.
+Read `AGENTS.md`, `local/trip.json`, this workflow, the assigned skill, `.agents/config/researcher.json`, and `.agents/config/reviewer.json` when review is required. The researcher config owns the default model for discovery and comparison. An explicit host override takes precedence when exposed; otherwise use the default without asking the user to identify the current model. Schedule and execution mode come from the actual host invocation; `local/automation.json` is not required.
 
 ## Durable Lifecycle
 
@@ -31,7 +31,7 @@ After saving and validating a draft, attempt the exact reviewer deployment in in
 
 ## Research Boundaries
 
-Record intended app model as configuredModel. Actual model and modelEvidence stay null unless runtime-exposed. Include exactly `Actual researcher model identity is unverified; configured model is not runtime proof.` if unknown. Known mismatch stops research. executionMode is interactive, scheduled or unknown.
+Record the effective researcher configuration as configuredModel: an explicit exposed host override, otherwise `.agents/config/researcher.json` model. Pass host overrides to scripts using `TRAVEL_RESEARCHER_MODEL`. Actual model and modelEvidence stay null unless runtime-exposed. Include exactly `Actual researcher model identity is unverified; configured model is not runtime proof.` if unknown. Known mismatch against the effective configuration stops research; unknown runtime identity does not. executionMode is interactive, scheduled or unknown. Changing the repository default does not switch the host model or register tasks.
 
 Public rendered booking pages only; save exact search context, page text, capture time, dates, two travelers, currency and conditions. Follow the approved regular-canvas policy if private isolation cannot be verified: privateContextVerified false, verificationMethod regular-canvas, isolation unknown, isolationEvidence null, all safeguards true and exact limitation `Regular browser canvas used; cookie and login isolation are unknown.` Stop on authentication, account access or bot defenses. No purchase, login, personal profiles, CAPTCHA workarounds or saved bookings.
 

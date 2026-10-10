@@ -10,6 +10,7 @@ import { applyReviewPolicy } from '../scripts/review-policy.mjs';
 import { readArtifact, promoteDestination, validateComparisonInputs } from '../scripts/research-artifacts.mjs';
 import { claimDestination, checkpointDestination, recordReviewRound } from '../scripts/research-store.mjs';
 import { buildPages } from '../scripts/build-pages.mjs';
+import { loadAutomationConfig, configForReport } from '../scripts/automation-config.mjs';
 
 const now = new Date('2026-10-09T12:00:00Z');
 const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'travel-publish-test-'));
@@ -295,4 +296,46 @@ test('historical dossiers survive appended destinations but not changed trip con
   assert.throws(() => validate(beforeRemoval, config, trip, directory, now, { historicalPrices: true }), /fingerprint/);
   assert.doesNotThrow(() => validate(draft, config, expanded, directory, now, { historicalPrices: true }));
   assert.throws(() => validate(draft, config, { ...expanded, budget: { ...trip.budget, targetUsd: 9999 } }, directory, now, { historicalPrices: true }), /fingerprint/);
+});
+
+test('repository researcher default validates disclosed model uncertainty and preserves historical reports', () => {
+  const project = fs.mkdtempSync(path.join(os.tmpdir(), 'travel-researcher-config-test-'));
+  const local = path.join(project, 'local');
+  const previousModel = process.env.TRAVEL_RESEARCHER_MODEL;
+  delete process.env.TRAVEL_RESEARCHER_MODEL;
+  try {
+    fs.mkdirSync(path.join(project, '.agents/config'), { recursive: true });
+    fs.mkdirSync(local);
+    fs.writeFileSync(path.join(project, '.agents/config/researcher.json'), JSON.stringify({ model: 'default-test' }));
+    const defaults = loadAutomationConfig(local);
+    assert.equal(defaults.jobs.discovery.researcherModel, 'default-test');
+    assert.equal(defaults.jobs.comparison.researcherModel, 'default-test');
+    const draft = report();
+    draft.configuredModel = 'default-test';
+    draft.model = null;
+    draft.modelEvidence = null;
+    draft.limitations.push('Actual researcher model identity is unverified; configured model is not runtime proof.');
+    validate(draft, defaults, trip, directory, now);
+    draft.model = 'wrong-test';
+    draft.modelEvidence = 'TEST runtime evidence';
+    assert.throws(() => validate(draft, defaults, trip, directory, now), /mismatch/);
+    validate(report(), configForReport(defaults, report()), trip, directory, now);
+    process.env.TRAVEL_RESEARCHER_MODEL = 'host-test';
+    assert.equal(loadAutomationConfig(local).jobs.discovery.researcherModel, 'host-test');
+    assert.equal(configForReport(loadAutomationConfig(local), report()).jobs.discovery.researcherModel, 'host-test');
+    delete process.env.TRAVEL_RESEARCHER_MODEL;
+    fs.writeFileSync(path.join(local, 'automation.json'), JSON.stringify({ jobs: { discovery: { researcherModel: 'default-test' }, comparison: {} } }));
+    const explicitLocal = loadAutomationConfig(local);
+    assert.equal(configForReport(explicitLocal, report()).jobs.discovery.researcherModel, 'default-test');
+    assert.equal(configForReport(explicitLocal, report()).jobs.comparison.researcherModel, 'research-test');
+    fs.rmSync(path.join(local, 'automation.json'));
+    fs.writeFileSync(path.join(project, '.agents/config/researcher.json'), JSON.stringify({ model: 'auto' }));
+    assert.throws(() => loadAutomationConfig(local), /Explicit.*researcher model/);
+    fs.rmSync(path.join(project, '.agents/config/researcher.json'));
+    assert.equal(loadAutomationConfig(local, report()).jobs.discovery.researcherModel, 'research-test');
+  } finally {
+    if (previousModel === undefined) delete process.env.TRAVEL_RESEARCHER_MODEL;
+    else process.env.TRAVEL_RESEARCHER_MODEL = previousModel;
+    fs.rmSync(project, { recursive: true, force: true });
+  }
 });

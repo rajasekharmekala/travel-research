@@ -24,8 +24,8 @@ See .agents/workflows/research-protocol.md for commands and artifact contracts a
 ## App Setup
 
 1. Keep trip-specific settings in ignored `local/trip.json`.
-2. Configure schedules, researcher model selections, and any dedicated reviewer tasks in the host app. Repository files describe the intended jobs but cannot register host tasks.
-3. Read `AGENTS.md` and the assigned workflow before a run. Model selection and schedule come from the actual host invocation; configuration is not proof of runtime routing. No `local/automation.json` is required.
+2. Set the default researcher in `.agents/config/researcher.json`; keep reviewer policy in `.agents/config/reviewer.json`. Configure schedules and any dedicated reviewer tasks in the host app, selecting the researcher default there explicitly. Repository files cannot register host tasks or change the model picker.
+3. Read `AGENTS.md` and the assigned workflow before a run. Use the researcher default unless an explicit host override is exposed; pass overrides to scripts with `TRAVEL_RESEARCHER_MODEL`. Missing host model metadata does not require a user prompt. Execution mode and schedules come from the actual invocation; configuration is not proof of runtime routing. No `local/automation.json` is required.
 
 ## Daily Work
 
@@ -49,7 +49,7 @@ Write one JSON object at `local/runs/<unique-run>/draft.json`:
   "job": "discovery",
   "status": "partial",
   "summary": "Evidence-based summary",
-  "configuredModel": "EXPLICIT_MODEL_SELECTED_IN_APP",
+  "configuredModel": "COPY_RESEARCHER_CONFIG_MODEL_OR_EXPLICIT_HOST_OVERRIDE",
   "model": null,
   "modelEvidence": null,
   "executionMode": "interactive",
@@ -110,7 +110,9 @@ Review receipt format and dispatch rules are in `.agents/workflows/review.md`. D
 
 ## Selected Models
 
-Select explicit models in the host app. Record configured model selection separately from actual model identity; only runtime evidence can establish actual routing. Reviewer identity and context must be evidenced for approval. Do not use automatic or unconfigured fallbacks.
+`.agents/config/researcher.json` is the default for discovery and comparison. It is set to `azure/AOSCFoundry/gpt-6.1-sol`, the selected model identifier recorded by VS Code for the configuration session. Change this file to choose a new repository default, and select the matching model in host tasks; the file itself cannot switch the host model. Explicit host configuration, including `TRAVEL_RESEARCHER_MODEL`, may override the default. Historical reports retain their recorded configuration when rendered.
+
+Record the effective default or override as `configuredModel`, not as actual identity. Do not ask the user to identify the model when host metadata is absent; use the default and leave `model` and `modelEvidence` null with the required disclosure. Only runtime evidence can establish actual routing. Reviewer identity and context must still be evidenced for approval. Do not use automatic or unconfigured fallbacks.
 
 ## Browser Consent Update
 
