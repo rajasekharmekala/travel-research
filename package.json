@@ -7,8 +7,6 @@
     "validate-report": "node scripts/publish.mjs validate",
     "publish-report": "node scripts/publish.mjs publish",
     "publish-best-effort": "node scripts/publish.mjs publish-best-effort",
-    "legacy-status": "node scripts/monitor.mjs status",
-    "unschedule-legacy": "node scripts/monitor.mjs uninstall",
     "research": "node scripts/research.mjs",
     "portal": "node scripts/portal.mjs",
     "pages": "node scripts/build-pages.mjs",

@@ -19,13 +19,13 @@ Use `npm run research -- init`, `npm run research -- status`, and `npm run resea
 
 Dossiers cover documents/transit, regional climate versus forecasts, experiences and holiday closures, neighborhoods/lodging, transport/fatigue, complete party costs, cancellation risks, alternatives and pushback. Every travel day has lodging, transfers and a weather alternative. Review rounds persist through restarts; analysis has a maximum 30-day lifetime while quotes become historical after 24 hours. Final comparison rechecks all approved dossier hashes and fresh airline/hotel quotes. User-accepted proposals can expand the destination set; agents cannot silently add locations or raise the ceiling.
 
-See .agents/workflows/research-protocol.md for commands and artifact contracts and .agents/workflows/activation.md for host-app task registration. Five repository skills cover research, review, comparison, opportunities and publication. Existing drafts remain untouched and unapproved; they are not retroactively promoted into complete dossiers. Browser consent and exact runtime identity limitations remain unchanged. Host task registration and genuine reviewer dispatch still need app support; files do not activate schedules.
+See .agents/workflows/research-protocol.md for commands and artifact contracts and .agents/workflows/activation.md for host-app runs. Five repository skills cover research, review, comparison, opportunities and publication. Existing drafts remain untouched and unapproved; they are not retroactively promoted into complete dossiers. Browser consent and exact runtime identity limitations remain unchanged.
 
 ## App Setup
 
 1. Keep trip-specific settings in ignored `local/trip.json`.
-2. Set the default researcher in `.agents/config/researcher.json`; keep reviewer policy in `.agents/config/reviewer.json`. Configure schedules and any dedicated reviewer tasks in the host app, selecting the researcher default there explicitly. Repository files cannot register host tasks or change the model picker.
-3. Read `AGENTS.md` and the assigned workflow before a run. Use the researcher default unless an explicit host override is exposed; pass overrides to scripts with `TRAVEL_RESEARCHER_MODEL`. Missing host model metadata does not require a user prompt. Execution mode and schedules come from the actual invocation; configuration is not proof of runtime routing. No `local/automation.json` is required.
+2. At the start of each run, choose the researcher model and export `TRAVEL_RESEARCHER_MODEL` (or `TRAVEL_MODEL`); it is recorded as `configuredModel`. `.agents/config/researcher.json` is only the fallback default. Keep reviewer preference chain in `.agents/config/reviewer.json`. Repository files cannot change the model picker.
+3. Read `AGENTS.md` and the assigned workflow before a run. Execution mode comes from the actual invocation; configuration is not proof of runtime routing. No `local/automation.json` is required.
 
 ## Daily Work
 
@@ -49,7 +49,7 @@ Write one JSON object at `local/runs/<unique-run>/draft.json`:
   "job": "discovery",
   "status": "partial",
   "summary": "Evidence-based summary",
-  "configuredModel": "COPY_RESEARCHER_CONFIG_MODEL_OR_EXPLICIT_HOST_OVERRIDE",
+  "configuredModel": "PER_EXECUTION_CHOICE_VIA_TRAVEL_RESEARCHER_MODEL",
   "model": null,
   "modelEvidence": null,
   "executionMode": "interactive",
@@ -110,9 +110,9 @@ Review receipt format and dispatch rules are in `.agents/workflows/review.md`. D
 
 ## Selected Models
 
-`.agents/config/researcher.json` is the default for discovery and comparison. It is set to `azure/AOSCFoundry/gpt-6.1-sol`, the selected model identifier recorded by VS Code for the configuration session. Change this file to choose a new repository default, and select the matching model in host tasks; the file itself cannot switch the host model. Explicit host configuration, including `TRAVEL_RESEARCHER_MODEL`, may override the default. Historical reports retain their recorded configuration when rendered.
+Choose the researcher model at the start of each run via `TRAVEL_RESEARCHER_MODEL` (or `TRAVEL_MODEL`); record the choice as `configuredModel` in the draft. `.agents/config/researcher.json` is only the fallback default. Reviewers follow the chain in `.agents/config/reviewer.json` (ao-haiku-5-5-sc, then ao-sonnet-5-5-sc, then Qwen/Qwen-latest (ehl)); `TRAVEL_REVIEWER_MODEL` may force one chain member per execution. Historical reports retain their recorded configuration when rendered.
 
-Record the effective default or override as `configuredModel`, not as actual identity. Do not ask the user to identify the model when host metadata is absent; use the default and leave `model` and `modelEvidence` null with the required disclosure. Only runtime evidence can establish actual routing. Reviewer identity and context must still be evidenced for approval. Do not use automatic or unconfigured fallbacks.
+Record the per-execution choice as `configuredModel`, not as actual identity. Leave `model` and `modelEvidence` null with the required disclosure unless runtime evidence is available. Only runtime evidence can establish actual routing. Reviewer identity and context must still be evidenced for approval, with `fallbackReason` whenever the primary reviewer is skipped. Do not use automatic or unconfigured fallbacks.
 
 ## Browser Consent Update
 
@@ -128,15 +128,15 @@ Estimate-only options are published with low price confidence and conditional va
 
 ## Dedicated Reviewer Tasks
 
-Dedicated per-pass app tasks are an optional host setup, not a repository registration mechanism. The coordinator attempts inline dispatch first. Use separate app tasks only after the host confirms they are registered; otherwise record the actual inline dispatch failure or unavailable runtime capability and leave review pending. Each genuine pass must use the exact configured deployment and bind its receipt to current draft and evidence hashes.
+Dedicated per-pass app tasks are an optional host setup, not a repository registration mechanism. The coordinator attempts inline dispatch first, using the highest-available reviewer chain member. Use separate app tasks only after the host confirms they are registered; otherwise record the actual inline dispatch failure or unavailable runtime capability and leave review pending. Each genuine pass must use a chain member and bind its receipt to current draft and evidence hashes, with `fallbackReason` when the primary is skipped.
 
 ## Current Review Policy
 
-`.agents/config/reviewer.json` is the sole review-policy owner: exact configured deployment, source/consistency/coverage/opportunities passes, and a maximum of four rounds. Every pass must be an independent genuine invocation with host-backed model/context evidence. Configuration alone does not invoke a model or prove its identity. Approved publication requires all four current approvals; evidenced reviewer unavailability or exhausted rounds can permit only separately labeled NOT APPROVED best effort under policy. Never fabricate attempts, findings, prices, receipts, approvals, or runtime identity.
+`.agents/config/reviewer.json` is the sole review-policy owner: reviewer preference chain (ao-haiku-5-5-sc, ao-sonnet-5-5-sc, Qwen/Qwen-latest (ehl)), source/consistency/coverage/opportunities passes, and a maximum of four rounds. Every pass must be an independent genuine invocation with host-backed model/context evidence, attempting the highest-available chain member first. Configuration alone does not invoke a model or prove its identity. Approved publication requires all four current approvals; evidenced reviewer unavailability or exhausted rounds can permit only separately labeled NOT APPROVED best effort under policy. Never fabricate attempts, findings, prices, receipts, approvals, or runtime identity.
 
 ## GitHub Pages And Privacy
 
-The public site is generated in `docs/` and served from `main:/docs`. Every `npm run portal` rebuilds all configured destination pages in the shared theme. Scheduled workflows run `npm run pages:sync` afterward to commit and push only changed generated `docs/` pages. The sync is limited to `main`, the configured remote and `docs/`; it never stages `local/`, force-pushes or commits unrelated work. It requires SSH authorization in the task runtime.
+The public site is generated in `docs/` and served from `main:/docs`. Every `npm run portal` rebuilds all configured destination pages in the shared theme. Run `npm run pages:sync` afterward to commit and push only changed generated `docs/` pages. The sync is limited to `main`, the configured remote and `docs/`; it never stages `local/`, force-pushes or commits unrelated work. It requires SSH authorization in the task runtime.
 
 `docs/todo.html` and `docs/todo.md` are explicitly allowed user-maintained files. The builder preserves them, and automatic sync excludes their changes from staging and commits, including changes you already staged. Publish edits to those files manually after checking their public content. Other unexpected files and all symlinks still block sync; do not add manual files to the generated-pages manifest.
 

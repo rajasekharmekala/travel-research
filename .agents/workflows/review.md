@@ -1,10 +1,10 @@
 # Configurable Independent Review
 
-Read `.agents/config/reviewer.json` as the sole owner of reviewer model, passes, round cap, output directory, and failure policy. Read `.agents/config/researcher.json` for the coordinator's default researcher model; an explicit exposed host override takes precedence. Read execution mode from the actual host invocation; do not require `local/automation.json`. A configured model or task-registration flag is not evidence that dispatch occurred.
+Read `.agents/config/reviewer.json` as the sole owner of reviewer preference chain, passes, round cap, output directory, and failure policy. Read `.agents/config/researcher.json` as the fallback default researcher model; the per-execution choice via `TRAVEL_RESEARCHER_MODEL` (or `TRAVEL_MODEL`) takes precedence. Read execution mode from the actual host invocation; do not require `local/automation.json`. A configured model or task-registration flag is not evidence that dispatch occurred.
 
 ## Required Dispatch Attempt
 
-For every structurally valid draft, first inspect the current host's available reviewer-dispatch mechanism and attempt the exact configured deployment in four distinct fresh contexts, one per configured role. Do not skip this attempt because a `reviewers` field is null or dedicated tasks are unregistered. Record the real invocation outcome and host-exposed model/context evidence. Mark a reviewer unavailable only after a concrete failed invocation or evidence that this runtime exposes no reviewer-dispatch mechanism. Use dedicated app tasks only if they are already confirmed registered; a prompt cannot register them. Never imply an attempt occurred if no invocation was made.
+For every structurally valid draft, first inspect the current host's available reviewer-dispatch mechanism and attempt the preference chain (ao-haiku-5-5-sc, then ao-sonnet-5-5-sc, then Qwen/Qwen-latest (ehl)) in four distinct fresh contexts, one per configured role, highest-available first. `TRAVEL_REVIEWER_MODEL` may force one chain member for the execution. Do not skip this attempt because a `reviewers` field is null or dedicated tasks are unregistered. Record the real invocation outcome, the actual model used, `fallbackReason` whenever the primary is skipped, and host-exposed model/context evidence. Mark a reviewer unavailable only after a concrete failed invocation or evidence that this runtime exposes no reviewer-dispatch mechanism. Use dedicated app tasks only if they are already confirmed registered; a prompt cannot register them. Never imply an attempt occurred if no invocation was made.
 
 ## Before Review
 
@@ -51,7 +51,8 @@ Write each pass to `review/<role>.review.json`:
 ```json
 {
   "role": "source",
-  "model": "ACTUAL_CONFIGURED_QWEN_DEPLOYMENT_ID",
+  "model": "ACTUAL_CHAIN_MEMBER_MODEL_ID",
+  "fallbackReason": "WHY_HIGHER_PREFERENCE_MEMBER_WAS_SKIPPED (omit when primary was used)",
   "runtimeEvidence": "Actual host identity and fresh-context evidence",
   "draftSha256": "CURRENT_HASH",
   "evidenceSha256": "CURRENT_EVIDENCE_HASH",
@@ -84,6 +85,6 @@ The coverage receipt additionally requires `destinationAssessments` for the full
 
 For `job: destination`, read research-protocol.md and travel-review. Coverage assesses exactly the dossier's configured destination, every required analysis section, route/date-window exclusions and every itinerary day. It must not claim all 18 have been researched. Broad discovery and final comparison coverage still assess all configured destinations. Comparison waits for reviewed current dossier inputs for all locations.
 
-Staged receipts require actual runtime-exposed `contextId`, `contextEvidence` and `modelEvidence` in addition to `runtimeEvidence`, role, exact configured model, draft/evidence hashes, round, verdict and structured findings. All four context IDs must differ. Missing runtime evidence is unavailable, not approved. Never fabricate IDs or identity proof.
+Staged receipts require actual runtime-exposed `contextId`, `contextEvidence` and `modelEvidence` in addition to `runtimeEvidence`, role, chain-member model (`fallbackReason` when the primary is skipped), draft/evidence hashes, round, verdict and structured findings. All four context IDs must differ. Missing runtime evidence is unavailable, not approved. Never fabricate IDs or identity proof.
 
 Record each complete review round with `node scripts/research.mjs record-review <run/review-round.json>`. Its fields are id, draftSha256, evidenceSha256, round and four attempts `{role,status,evidence}`; status is approve, revise, block or unavailable. Persistent rounds must increase sequentially and stay within reviewer.json. Request revisions through scripts/research.mjs revise; preserve the report's round history across sessions. On approval use scripts/research.mjs promote for dossiers and scripts/publish.mjs publish for comparisons, then rebuild scripts/portal.mjs. Best effort remains unapproved and never enters the approved dossier ledger.

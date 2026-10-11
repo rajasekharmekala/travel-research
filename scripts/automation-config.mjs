@@ -15,7 +15,7 @@ export function loadAutomationConfig(local, report = null) {
     if (error.code !== 'ENOENT') throw error;
   }
   if (researcher !== null && !explicit(researcher.model)) throw new Error('Explicit default researcher model required in .agents/config/researcher.json');
-  const configuredModel = process.env.TRAVEL_RESEARCHER_MODEL ?? report?.configuredModel ?? report?.model ?? researcher?.model ?? null;
+  const configuredModel = process.env.TRAVEL_RESEARCHER_MODEL ?? process.env.TRAVEL_MODEL ?? report?.configuredModel ?? report?.model ?? researcher?.model ?? null;
   const jobs = { discovery: {}, comparison: {}, ...(config.jobs ?? {}) };
   const researcherDefaultJobs = [];
   if (explicit(configuredModel)) {

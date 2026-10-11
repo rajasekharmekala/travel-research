@@ -9,7 +9,7 @@ Read ../../workflows/research-protocol.md. Structured drafts, saved evidence and
 
 Promote reviewed destination dossiers through scripts/research.mjs promote. Publish reviewed comparisons through scripts/publish.mjs publish. Policy-eligible best effort uses publish-best-effort and remains NOT APPROVED; it never replaces the approved ledger or approved latest output. Rebuild the portal after each checkpoint, promotion or meaningful status change.
 
-Preserve the portfolio-inspired neutral report theme, readable chapter hierarchy, mobile navigation, cost breakdowns, exact dates, historical quote labeling, limitations, references and explicit review status. Escape all website/draft text. No trackers, remote personal content, authentication, public hosting, purchases, portfolio access or email. Validate with tests and rendered desktop/mobile checks. Files and configuration do not register scheduled tasks.
+Preserve the portfolio-inspired neutral report theme, readable chapter hierarchy, mobile navigation, cost breakdowns, exact dates, historical quote labeling, limitations, references and explicit review status. Escape all website/draft text. No trackers, remote personal content, authentication, public hosting, purchases, portfolio access or email. Validate with tests and rendered desktop/mobile checks. Files and configuration do not register tasks.
 
 ## Automatic Privacy-Safe Pages Publication
 

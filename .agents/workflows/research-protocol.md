@@ -1,6 +1,6 @@
 # Staged Travel Research Protocol
 
-Read `AGENTS.md`, `local/trip.json`, this workflow, the assigned skill, `.agents/config/researcher.json`, and `.agents/config/reviewer.json` when review is required. The researcher config owns the default model for discovery and comparison. An explicit host override takes precedence when exposed; otherwise use the default without asking the user to identify the current model. Schedule and execution mode come from the actual host invocation; `local/automation.json` is not required.
+Read `AGENTS.md`, `local/trip.json`, this workflow, the assigned skill, `.agents/config/researcher.json`, and `.agents/config/reviewer.json` when review is required. At the start of each execution, choose the running researcher model via `TRAVEL_RESEARCHER_MODEL` (or `TRAVEL_MODEL`) and record it as `configuredModel`; the researcher config is only the fallback default. Execution mode comes from the actual host invocation; `local/automation.json` is not required.
 
 ## Durable Lifecycle
 
@@ -27,11 +27,11 @@ Run `node scripts/research.mjs checkpoint local/runs/<run-id>/checkpoint.json`. 
 
 ## Review Dispatch Gate
 
-After saving and validating a draft, attempt the exact reviewer deployment in independent host-supported contexts for all configured passes. Do not infer dispatch unavailability from missing registration metadata, null reviewer lists, or a missing automation file. Record actual invocation evidence. If this runtime exposes no dispatch mechanism or the calls fail, record the concrete capability/error evidence and missing passes, then retain the draft as awaiting review. Invoke dedicated reviewer tasks only when the host confirms they are registered. Never fabricate a dispatch, receipt, model identity, or approval.
+After saving and validating a draft, attempt the reviewer preference chain (ao-haiku-5-5-sc, then ao-sonnet-5-5-sc, then Qwen/Qwen-latest (ehl)) in independent host-supported contexts for all configured passes, highest-available first. `TRAVEL_REVIEWER_MODEL` may force one chain member for the execution. Do not infer dispatch unavailability from missing registration metadata, null reviewer lists, or a missing automation file. Record actual invocation evidence, the actual model used, and `fallbackReason` whenever the primary is skipped. If this runtime exposes no dispatch mechanism or the calls fail, record the concrete capability/error evidence and missing passes, then retain the draft as awaiting review. Invoke dedicated reviewer tasks only when the host confirms they are registered. Never fabricate a dispatch, receipt, model identity, or approval.
 
 ## Research Boundaries
 
-Record the effective researcher configuration as configuredModel: an explicit exposed host override, otherwise `.agents/config/researcher.json` model. Pass host overrides to scripts using `TRAVEL_RESEARCHER_MODEL`. Actual model and modelEvidence stay null unless runtime-exposed. Include exactly `Actual researcher model identity is unverified; configured model is not runtime proof.` if unknown. Known mismatch against the effective configuration stops research; unknown runtime identity does not. executionMode is interactive, scheduled or unknown. Changing the repository default does not switch the host model or register tasks.
+Record the per-execution researcher choice as configuredModel. Pass it to scripts using `TRAVEL_RESEARCHER_MODEL` (or `TRAVEL_MODEL`). Actual model and modelEvidence stay null unless runtime-exposed. Include exactly `Actual researcher model identity is unverified; configured model is not runtime proof.` if unknown. Known mismatch against the effective configuration stops research; unknown runtime identity does not. executionMode is interactive or unknown. Changing the repository default does not switch the host model.
 
 Public rendered booking pages only; save exact search context, page text, capture time, dates, two travelers, currency and conditions. Follow the approved regular-canvas policy if private isolation cannot be verified: privateContextVerified false, verificationMethod regular-canvas, isolation unknown, isolationEvidence null, all safeguards true and exact limitation `Regular browser canvas used; cookie and login isolation are unknown.` Stop on authentication, account access or bot defenses. No purchase, login, personal profiles, CAPTCHA workarounds or saved bookings.
 
@@ -61,4 +61,4 @@ After every completed top-level researcher/coordinator automation execution, run
 
 ## Delivery
 
-`node scripts/portal.mjs` builds the private portal and sanitized public docs. All personal data, evidence and private HTML stay under ignored local/. The sole Git operation authorized for automation is the validated docs-only commit/push performed by `npm run pages:sync`; no other paths may be committed or pushed. Configuring workflows does not register tasks. Record what the host actually scheduled and dispatched, not what documentation intended.
+`node scripts/portal.mjs` builds the private portal and sanitized public docs. All personal data, evidence and private HTML stay under ignored local/. The sole Git operation authorized for automation is the validated docs-only commit/push performed by `npm run pages:sync`; no other paths may be committed or pushed. Record what the host actually dispatched, not what documentation intended.

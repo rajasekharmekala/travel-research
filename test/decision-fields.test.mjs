@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { validateEntry, validateLodging, validateVoices } from '../scripts/decision-fields.mjs';
 import { projectPublicDossier, renderPublicDossier } from '../scripts/public-dossier.mjs';
 
-const entry = () => ({ steps: ['Check eligibility', 'Apply online', 'Attend the appointment'], mechanism: 'e-visa', requirement: 'e-visa online', leadTimeDays: 10, lastSafeApplyDate: '2026-12-01', feasibleByDepart: true, usVisaDependency: 'Valid US visa required', transit: 'None', fees: 'USD 50 each', source: 'https://example.com/evisa' });
+const entry = () => ({ steps: ['Check eligibility', 'Apply online', 'Attend the appointment'], documents: ['Passport valid 6+ months', 'US visa copy', 'Bank statements'], whereToApply: 'Online portal; SF consulate for exceptions', mechanism: 'e-visa', requirement: 'e-visa online', leadTimeDays: 10, lastSafeApplyDate: '2026-12-01', feasibleByDepart: true, usVisaDependency: 'Valid US visa required', transit: 'None', fees: 'USD 50 each', source: 'https://example.com/evisa' });
 const property = () => ({ name: 'Hotel A', area: 'Centro', tier: 'local-boutique', whyHere: 'Quiet street.', chaseTravel: 'the-edit', chaseNote: 'Listed on the public Edit page.', guestRating: { score: 9.1, scale: 10, source: 'Google' }, nightlyUsd: 210, priceBasis: 'Dec 23 public rate', sources: ['https://example.com/h'] });
 const voice = (url, extra = {}) => ({ author: 'Sam', context: 'blog, 2025', takeaway: 'Book the ferry early.', url, ...extra });
 
@@ -17,6 +17,9 @@ test('entry requires an honest lead time, last safe date and feasibility', () =>
   assert.throws(() => validateEntry({ ...entry(), feasibleByDepart: 'yes' }), /feasibleByDepart/);
   assert.throws(() => validateEntry({ ...entry(), steps: ['one', 'two'] }), /three application steps/);
   assert.throws(() => validateEntry({ ...entry(), documents: 'passport' }), /documents/);
+  assert.throws(() => validateEntry({ ...entry(), documents: ['passport', 'photo'] }), /three documents/);
+  assert.throws(() => validateEntry({ ...entry(), whereToApply: '' }), /whereToApply/);
+  assert.doesNotThrow(() => validateEntry({ ...entry(), mechanism: 'visa-free', whereToApply: '' }));
 });
 
 test('lodging needs two rated, sourced mid-range or local picks and an honest Chase Travel status', () => {

@@ -1,14 +1,14 @@
 # Host App Activation
 
-The host app is the source of truth for schedules, actual invocations, and task registration. `.agents/config/researcher.json` owns the default researcher model; `.agents/config/reviewer.json` owns reviewer policy. An explicit exposed host researcher override takes precedence; otherwise use the default without asking the user to identify the selected model. The repository does not require `local/automation.json`. Never treat configured settings as runtime evidence, and do not imply that config files switch the host model or register tasks.
+The host app is the source of truth for actual invocations. `.agents/config/researcher.json` is the fallback default researcher model; choose the running model per execution via `TRAVEL_RESEARCHER_MODEL` (or `TRAVEL_MODEL`). `.agents/config/reviewer.json` owns the reviewer preference chain (ao-haiku-5-5-sc, ao-sonnet-5-5-sc, Qwen/Qwen-latest (ehl)); `TRAVEL_REVIEWER_MODEL` may force one chain member. The repository does not require `local/automation.json`. Never treat configured settings as runtime evidence.
 
 ## Reviewer Dispatch
 
-At runtime, attempt genuine inline dispatch using the exact model in `.agents/config/reviewer.json`, with one fresh independent context per pass. Missing reviewer-task registration does not prove inline dispatch unavailable. Register separate app tasks only as an explicit host setup action if inline dispatch is unsupported; this workflow cannot register them. Use dedicated tasks during a run only after the host confirms registration. Record actual invocation results and concrete runtime evidence before leaving a draft awaiting review.
+At runtime, attempt genuine inline dispatch using the highest-available reviewer chain member (ao-haiku-5-5-sc, then ao-sonnet-5-5-sc, then Qwen/Qwen-latest (ehl)), with one fresh independent context per pass. Missing reviewer-task registration does not prove inline dispatch unavailable. Register separate app tasks only as an explicit host setup action if inline dispatch is unsupported; this workflow cannot register them. Use dedicated tasks during a run only after the host confirms registration. Record actual invocation results and concrete runtime evidence before leaving a draft awaiting review.
 
 ## Research Tasks
 
-Configure discovery and comparison schedules in the host app and select the explicit researcher deployment from `.agents/config/researcher.json` unless intentionally overriding it. Prompts should read `AGENTS.md` and run `.agents/workflows/destination-assessment.md` or `.agents/workflows/staged-comparison.md` as appropriate. Repository instructions do not create or register host tasks. Keep the jobs independent: discovery advances one destination per run; comparison waits for reviewed current dossiers. Do not run retired CLI research or launchd jobs.
+Prompts should read `AGENTS.md` and run `.agents/workflows/destination-assessment.md` or `.agents/workflows/staged-comparison.md` as appropriate. Keep the runs independent: discovery advances one destination per run; comparison waits for reviewed current dossiers.
 
 ## Review Tasks
 
@@ -22,7 +22,7 @@ Keep personal dates, home airports, budgets, document/employment assessments, pa
 
 ## Pages Sync
 
-After portal builds, run `npm run pages:sync` to publish changed sanitized docs. It commits only `docs/`, only on main, and pushes without force. Confirm SSH authentication is available to the scheduled task runtime. A failed/conflicting push stays a failure; never stage or force-push private `local/` data. This workspace's repository and Pages endpoint are under the Adobe corporate host; the deployed URL redirects to Adobe Okta in the current unauthenticated HTTP check.
+After portal builds, run `npm run pages:sync` to publish changed sanitized docs. It commits only `docs/`, only on main, and pushes without force. Confirm SSH authentication is available to the run runtime. A failed/conflicting push stays a failure; never stage or force-push private `local/` data. This workspace's repository and Pages endpoint are under the Adobe corporate host; the deployed URL redirects to Adobe Okta in the current unauthenticated HTTP check.
 
 ## Local Commands
 

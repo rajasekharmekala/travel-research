@@ -1,8 +1,14 @@
 export function applyReviewPolicy(config, policy) {
   if (!policy || typeof policy.model !== 'string' || !policy.model.trim() || policy.model.toLowerCase() === 'auto') throw new Error('Explicit reviewer model required');
+  const envOverride = typeof process.env.TRAVEL_REVIEWER_MODEL === 'string' && process.env.TRAVEL_REVIEWER_MODEL.trim() ? process.env.TRAVEL_REVIEWER_MODEL.trim() : null;
+  if (envOverride && envOverride.toLowerCase() === 'auto') throw new Error('Explicit reviewer model required');
+  const fallbacks = Array.isArray(policy.fallbackModels) ? policy.fallbackModels.filter(model => typeof model === 'string' && model.trim() && model.toLowerCase() !== 'auto') : [];
+  if (policy.fallbackModel && typeof policy.fallbackModel === 'string' && policy.fallbackModel.trim() && !fallbacks.includes(policy.fallbackModel)) fallbacks.unshift(policy.fallbackModel);
+  const primary = envOverride ?? policy.model;
+  const chain = [primary, ...fallbacks.filter(model => model !== primary)];
   if (!Array.isArray(policy.passes) || policy.passes.length !== 4 || new Set(policy.passes).size !== 4 || !['source', 'consistency', 'coverage', 'opportunities'].every(role => policy.passes.includes(role))) throw new Error('Four review passes required');
   if (!Number.isInteger(policy.max_rounds) || policy.max_rounds < 1 || policy.max_rounds > 4 || policy.require_validator_pass !== true) throw new Error('Review cap must be 1-4 with mandatory validation');
-  return { ...config, reviewPolicy: policy, reviewers: Object.fromEntries(policy.passes.map(role => [role, { model: policy.model }])) };
+  return { ...config, reviewPolicy: policy, reviewers: Object.fromEntries(policy.passes.map(role => [role, { model: primary, fallbackModels: chain.slice(1), fallbackModel: chain[1] ?? null }])) };
 }
 
 export function validateBestEffort(state, policy, draftSha256, evidenceSha256) {

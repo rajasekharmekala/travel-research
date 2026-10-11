@@ -19,6 +19,8 @@ export function validateEntry(entry) {
     if (entry[key] !== undefined && (!Array.isArray(entry[key]) || entry[key].some(item => !text(item) || item.length > 300))) throw new Error(`Dossier entry ${key} must be a list of short texts`);
   }
   if (entry.steps === undefined || entry.steps.length < 3) throw new Error('Dossier entry requires at least three application steps');
+  if (entry.documents === undefined || entry.documents.length < 3) throw new Error('Dossier entry requires at least three documents to prepare');
+  if (entry.mechanism !== 'visa-free' && !text(entry.whereToApply)) throw new Error('Dossier entry requires whereToApply (where to file from the Bay Area) unless visa-free');
 }
 
 export function validateLodging(lodging) {

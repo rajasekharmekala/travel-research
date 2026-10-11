@@ -2,7 +2,7 @@
 
 ## Dispatch Contract
 
-The coordinator must first attempt the host's genuine inline reviewer dispatch for the exact model in `.agents/config/reviewer.json`. Do not conclude inline dispatch is unavailable merely because dedicated tasks are unregistered. This workflow defines a reviewer pass; it does not register or launch app tasks. Use separate app tasks only after the host confirms they exist. If inline invocation is unavailable, record concrete runtime capability/error evidence and keep the draft pending.
+The coordinator must first attempt the host's genuine inline reviewer dispatch for the highest-available chain member (ao-haiku-5-5-sc, then ao-sonnet-5-5-sc, then Qwen/Qwen-latest (ehl)). Do not conclude inline dispatch is unavailable merely because dedicated tasks are unregistered. This workflow defines a reviewer pass; it does not register or launch app tasks. Use separate app tasks only after the host confirms they exist. If inline invocation is unavailable, record concrete runtime capability/error evidence and keep the draft pending.
 
 ## Staged Routing
 
@@ -20,7 +20,7 @@ If all four current hash-bound approvals exist, invoke approved publication. If 
 
 Use only the configured roles: source, consistency, coverage, opportunities. Coverage audits every one of the 18 destinations and writes the per-destination assessment required by review.md, even when comparison quotes only a shortlist. Do not approve discovery with skipped destinations; explain real blockers and continuation work honestly. Opportunities produces actionable next-research suggestions; it is constructive, not an adversarial-only or prose-style check. Optional suggestions are not unresolved defects. Keep factual uncertainty and unsupported-claim checks under source/consistency. The round cap applies to a whole report/run, not each location.
 
-Suggested setup: schedule after research or trigger manually when a valid draft exists. A delayed research run may be reviewed on the next attempt. Configure each role and model explicitly in the app; this editing session cannot establish reviewer availability or activate schedules.
+Suggested setup: run after research or trigger manually when a valid draft exists. A delayed research run may be reviewed on the next attempt. Configure each role and model explicitly in the app; this editing session cannot establish reviewer availability.
 
 ## Mandatory Final Sync
 

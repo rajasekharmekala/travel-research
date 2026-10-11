@@ -80,8 +80,9 @@ export function validateReviews(receipts, config, report, draftHash, capturedEvi
   for (const role of config.reviewPolicy?.passes ?? ['source', 'value']) {
     const receipt = receipts.find(item => item.role === role);
     const settings = config.reviewers[role];
-    const primary = receipt?.model === settings.model && explicit(settings.model);
-    const fallback = receipt?.model === settings.fallbackModel && explicit(settings.fallbackModel) && typeof receipt?.fallbackReason === 'string' && receipt.fallbackReason.trim().length > 0;
+    const chain = [settings.model, ...((Array.isArray(settings.fallbackModels) ? settings.fallbackModels : (settings.fallbackModel ? [settings.fallbackModel] : [])).filter(Boolean))];
+    const primary = receipt?.model === chain[0] && explicit(chain[0]);
+    const fallback = chain.slice(1).includes(receipt?.model) && explicit(receipt?.model) && typeof receipt?.fallbackReason === 'string' && receipt.fallbackReason.trim().length > 0;
     if (!receipt || (!primary && !fallback) || receipt.verdict !== 'approve' || receipt.draftSha256 !== draftHash || !receipt.runtimeEvidence || !Array.isArray(receipt.findings)) throw new Error(`Missing valid independent ${role} approval`);
     if (!capturedEvidenceHash || receipt?.evidenceSha256 !== capturedEvidenceHash) throw new Error(`Missing matching ${role} evidence hash`);
     if (config.reviewPolicy) {

@@ -1,6 +1,7 @@
 {
-  "_comment": "Single review-policy owner. Reviewer model is the exact name the host dispatch accepts (set by user 2026-10-10). Four complete review rounds maximum. Best effort is explicitly unapproved and never overrides quote validation or critical/high findings.",
-  "model": "Qwen/Qwen-latest (ehl)",
+  "_comment": "Single review-policy owner. Reviewer preference chain: ao-haiku-5-5-sc first, ao-sonnet-5-5-sc second, Qwen/Qwen-latest (ehl) last resort. TRAVEL_REVIEWER_MODEL may force one chain member per execution. Four complete review rounds maximum. Best effort is explicitly unapproved and never overrides quote validation or critical/high findings.",
+  "model": "ao-haiku-5-5-sc",
+  "fallbackModels": ["ao-sonnet-5-5-sc", "Qwen/Qwen-latest (ehl)"],
   "passes": [
     "source",
     "consistency",

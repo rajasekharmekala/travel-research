@@ -1,0 +1,5 @@
+[    1485ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ https://embamex.sre.gob.mx/favicon.svg:0
+[    1940ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ https://embamex.sre.gob.mx/favicon.ico:0
+[    2997ms] [LOG] JQMIGRATE: Migrate is installed, version 1.4.1 @ https://embamex.sre.gob.mx/india/media/jui/js/jquery-migrate.min.js?6bb4cd520b1d8e4b0185e211c543eead:1
+[    3389ms] TypeError: Cannot read properties of null (reading 'addEventListener')
+    at https://embamex.sre.gob.mx/india/index.php/es/consulares/visas:1271:16

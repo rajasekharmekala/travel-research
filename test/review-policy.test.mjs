@@ -4,10 +4,11 @@ import fs from 'node:fs';
 import { applyReviewPolicy, validateBestEffort, validateCoverage } from '../scripts/review-policy.mjs';
 const policy = JSON.parse(fs.readFileSync(new URL('../.agents/config/reviewer.json', import.meta.url)));
 const state = () => ({ draftSha256: 'draft', evidenceSha256: 'evidence', validatorPassed: true, reasonCode: 'reviewer_unavailable', reason: 'Host cannot dispatch explicit model', roundsCompleted: 0, missingPasses: policy.passes, unresolvedFindings: [], attempts: [{ status: 'unavailable', evidence: 'Host tool catalog contains no explicit-model dispatch' }] });
-test('policy maps all four passes to explicit Qwen ID', () => {
+test('policy maps all four passes to primary reviewer with fallback chain', () => {
   const config = applyReviewPolicy({}, policy);
   assert.equal(Object.keys(config.reviewers).length, 4);
   assert.equal(config.reviewers.opportunities.model, policy.model);
+  assert.deepEqual(config.reviewers.opportunities.fallbackModels, (policy.fallbackModels ?? []).filter(model => model !== policy.model));
   assert.throws(() => applyReviewPolicy({}, { ...policy, model: 'auto' }), /Explicit/);
   assert.throws(() => applyReviewPolicy({}, { ...policy, max_rounds: 5 }), /cap/);
 });

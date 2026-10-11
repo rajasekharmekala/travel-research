@@ -5,7 +5,7 @@ description: "Use when deeply researching a configured travel destination, creat
 
 # Destination Research
 
-Read `../../workflows/research-protocol.md` and `../../../AGENTS.md`. Read `local/trip.json`, then claim exactly one eligible destination through `scripts/research.mjs`. Read `.agents/config/researcher.json` for the default researcher model; use an explicit host override only when exposed, and otherwise copy the default to `configuredModel` without prompting the user. Take execution mode from the actual host invocation. Configuration is not proof of actual model identity; keep `model` and `modelEvidence` null unless runtime evidence is available. Do not require `local/automation.json`. Never access portfolio or personal wiki during travel research.
+Read `../../workflows/research-protocol.md` and `../../../AGENTS.md`. Read `local/trip.json`, then claim exactly one eligible destination through `scripts/research.mjs`. At the start of the execution, choose the running researcher model and export `TRAVEL_RESEARCHER_MODEL` (or `TRAVEL_MODEL`); record the choice as `configuredModel` (`.agents/config/researcher.json` is only the fallback default). Take execution mode from the actual host invocation. Configuration is not proof of actual model identity; keep `model` and `modelEvidence` null unless runtime evidence is available. Do not require `local/automation.json`. Never access portfolio or personal wiki during travel research.
 
 Write an evidence-backed dossier, not a generic travel guide. Assess all origin airports and date windows; deeply price at least one exact-date option for both travelers and explain rejected routes/windows. Save rendered browser text with exact search context. Separate observed party totals from estimates, include all hotel nights and fees, baggage, meals, transfers, activities and contingency. Recheck airline-direct totals without buying. Record alternative flight/hotel combinations and why the preferred combination wins.
 
@@ -14,6 +14,14 @@ Every dossier provides explained qualitative confidence and conditional value as
 Use assets/dossier-template.json for the dossier extension to the existing report envelope. Every section needs text, public sources, run-local evidence and observedAt. Write a complete date-by-date itinerary referencing a priced candidate, including outbound and return travel, lodging, transfer time and rainy-day alternatives. Research official entry/transit and US re-entry constraints for each traveler. Unknown documents or remote-work permission prevent buy recommendations, not honest conditional analysis.
 
 Distinguish regional seasonal climatology from forecasts; discuss daylight, rain, sea conditions, altitude, winter closures, Christmas/New Year schedules and capacity. Assess neighborhoods, experience quality, crowding, flight fatigue, cancellation exposure, budget sensitivity, who would dislike the destination and the strongest competing itinerary.
+
+## Itinerary Depth
+
+Every non-travel day needs a narrative plan plus at least two visits, each with its own reason to earn time: what the place is famous for (`significance`), why this trip spends time there (`whyVisit`), how long to allow (`duration`), seasonal/holiday hours, booking and transport specifics (`logistics`), and the source-backed cost or explicit unknown (`cost`). Beach/rest days still name the beach or activity, how to get there, and what it costs. The `plan` field must read as the day's story (morning/afternoon/evening flow), not a one-line label. Travel-only days use `travelDayReason` and empty visits. Every visit needs its own public source and run-local evidence; a day without evidence is a sketch, not research.
+
+## Visa Process Detail
+
+`dossier.entry` is a how-to-apply guide for an Indian passport holder, not a verdict. Write numbered `steps` in the official application order (at least three), a `documents` checklist (at least three specific items: exact forms, photos, statements, fees proof), `fees` with amounts per person, `whereToApply` naming the exact channel usable from the SF Bay Area (online portal URL, VFS center, consulate address and appointment booking page) taken from official pages, plus `leadTimeDays`, `lastSafeApplyDate` counted back from departure, and `feasibleByDepart`. Anything unknown gets a `nextAction` naming the exact check. Never guess timelines; never cite visa-agency blogs over government, embassy or official e-visa pages.
 
 Checkpoint only after scripts/publish.mjs validation succeeds. Hand off to travel-review; do not self-approve. Retain partial evidence after a blocker, with next action and retry date. Cite weak or missing evidence honestly. No invented price, image, review attempt or runtime identity.
 
@@ -48,7 +56,7 @@ If a source blocks you twice, move on and write down what the user can check in 
 
 Before the task is complete, run `npm run portal` followed by `npm run pages:sync`. The sync rebuilds the public allowlist and commits/pushes only validated `docs/`. Do not push private drafts, captures or reports. If the host runtime lacks SSH or push fails, treat publication as incomplete and report the exact error.
 
-After validation, attempt genuine reviewer dispatch using the exact configured deployment and separate host-supported contexts for each pass. Do not skip the attempt based only on null reviewer metadata or unregistered dedicated tasks. Record concrete dispatch evidence; if the host cannot dispatch, retain the draft awaiting review and report the exact limitation. Never fabricate receipts or approvals.
+After validation, attempt genuine reviewer dispatch using the preference chain (ao-haiku-5-5-sc, then ao-sonnet-5-5-sc, then Qwen/Qwen-latest (ehl)) and separate host-supported contexts for each pass, highest-available first. `TRAVEL_REVIEWER_MODEL` may force one chain member. Do not skip the attempt based only on null reviewer metadata or unregistered dedicated tasks. Record concrete dispatch evidence, the actual model used, and `fallbackReason` whenever the primary is skipped; if the host cannot dispatch, retain the draft awaiting review and report the exact limitation. Never fabricate receipts or approvals.
 
 ## Price Research Before Estimates
 

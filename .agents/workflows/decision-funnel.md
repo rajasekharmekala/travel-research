@@ -19,7 +19,7 @@ No destination is dropped before it has had its own end-to-end run. A destinatio
 
 One run per destination using `destination-research` and `advisor-memo`. The question each run answers: if the two of you went to this place in this window, what is the best version of the trip, what does it cost, and what is it like? Choose the best base, route, dates within the authorized windows, lodging tier and pace for that location, then argue for it in the memo. Do not shape the trip to flatter or sink a competitor.
 
-Check progress with `node scripts/research.mjs coverage`. It lists which destinations are researched (approved or awaiting review) and which are pending, researching or blocked, so batches can be scheduled until none remain.
+Check progress with `node scripts/research.mjs coverage`. It lists which destinations are researched (approved or awaiting review) and which are pending, researching or blocked, so runs can continue until none remain.
 
 Score usefulness with `node scripts/usefulness.mjs`. It rates every researched dossier 0 to 100 on price grounding, decision clarity, narrative depth, entry readiness, lodging fit, traveler voices and itinerary realism, names the two weakest dimensions, and writes `local/decision/usefulness.json`. Re-run weak dossiers on those dimensions first. The score measures decision-readiness, not whether the facts are true.
 
@@ -43,7 +43,7 @@ Instead of auditing form, the critic answers these questions about each dossier 
 
 ## Clocks the agents must track
 
-Booking deadlines, fare holds and re-quoting are handled by the user and the daily automation; agents do not plan them.
+Booking deadlines, fare holds and re-quoting are handled by the user on manual re-runs; agents do not plan them.
 
 Today's date matters. The core departure is 2026-12-23.
 

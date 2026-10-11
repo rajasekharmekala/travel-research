@@ -3,7 +3,7 @@
   "status": "partial",
   "destinationId": "COPY_FROM_CLAIM",
   "tripSha256": "COPY_FROM_CLAIM_STATE",
-  "configuredModel": "COPY_RESEARCHER_CONFIG_MODEL_OR_EXPLICIT_HOST_OVERRIDE",
+  "configuredModel": "PER_EXECUTION_CHOICE_VIA_TRAVEL_RESEARCHER_MODEL",
   "model": null,
   "modelEvidence": null,
   "executionMode": "unknown",
@@ -197,7 +197,8 @@
       "feasibleByDepart": null,
       "usVisaDependency": "REPLACE",
       "transit": "REPLACE_WITH_TRANSIT_REQUIREMENTS_FOR_PRICED_ROUTING",
-      "fees": "REPLACE",
+      "fees": "REPLACE_WITH_PER_PERSON_AMOUNTS",
+      "whereToApply": "REPLACE_WITH_EXACT_CHANNEL_USABLE_FROM_SF_BAY_AREA_PER_OFFICIAL_PAGES",
       "nextAction": "REPLACE_IF_ANY_FIELD_IS_UNKNOWN",
       "source": "https://REPLACE_WITH_OFFICIAL_PAGE",
       "steps": [
@@ -206,7 +207,9 @@
         "REPLACE_STEP_3"
       ],
       "documents": [
-        "REPLACE_DOCUMENT_FROM_OFFICIAL_LIST"
+        "REPLACE_DOCUMENT_FROM_OFFICIAL_LIST_MIN_3_ITEMS",
+        "REPLACE_DOCUMENT_2",
+        "REPLACE_DOCUMENT_3"
       ]
     },
     "lodging": [
