@@ -1,8 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { reconcile, claimDestination, checkpointDestination, transaction, recordReviewRound, requestRevision, digest } from './research-store.mjs';
-import { comparisonReadiness } from './dossier.mjs';
+import { reconcile, claimDestination, checkpointDestination, transaction, recordReviewRound, requestRevision, retryNow, digest } from './research-store.mjs';
+import { comparisonReadiness, preliminaryCoverage } from './dossier.mjs';
 import { readArtifact, promoteDestination, validateComparisonInputs, runFile } from './research-artifacts.mjs';
 import { applyReviewPolicy } from './review-policy.mjs';
 import { loadAutomationConfig } from './automation-config.mjs';
@@ -17,7 +17,7 @@ export async function main(args = process.argv.slice(2)) {
   const trip = json(path.join(local, 'trip.json'));
   const config = applyReviewPolicy(loadAutomationConfig(local), json(path.join(root, '.agents/config/reviewer.json')));
   let result;
-  if (['init', 'claim', 'checkpoint', 'promote', 'propose', 'revise', 'record-review'].includes(action)) {
+  if (['init', 'claim', 'checkpoint', 'promote', 'propose', 'revise', 'record-review', 'retry-now'].includes(action)) {
     result = await transaction(store, async existing => {
       const state = reconcile(existing, trip);
       state.reviewPolicySha256 = digest(config.reviewPolicy);
@@ -44,14 +44,19 @@ export async function main(args = process.argv.slice(2)) {
         value = { ...proposal, status: 'proposed', proposedAt: new Date().toISOString(), userAccepted: false };
         state.proposals.push(value);
       }
+      if (action === 'retry-now') value = retryNow(state, json(runFile(local, input)));
       if (action === 'revise') value = requestRevision(state, json(runFile(local, input)), config.reviewPolicy.max_rounds);
       if (action === 'record-review') value = recordReviewRound(state, json(runFile(local, input)), config.reviewPolicy.max_rounds);
       return { state, value };
     });
-  } else if (['status', 'ready', 'validate-comparison'].includes(action)) {
+  } else if (['status', 'ready', 'coverage', 'validate-comparison'].includes(action)) {
     let state;
     try { state = reconcile(json(path.join(store, 'state.json')), trip); } catch (error) { if (error.code !== 'ENOENT') throw error; state = reconcile(null, trip); }
     if (action === 'status') result = state;
+    else if (action === 'coverage') result = preliminaryCoverage(state, trip, record => {
+      const reportPath = (record.artifact ?? record.assessment)?.reportPath;
+      try { return json(path.join(local, reportPath)).tripSha256 ?? null; } catch { return null; }
+    });
     else {
       result = comparisonReadiness(state, trip);
       for (const item of result.coverage.filter(item => item.ready)) {
@@ -67,7 +72,7 @@ export async function main(args = process.argv.slice(2)) {
         result = validateComparisonInputs(artifact.report, state, trip, config, local);
       }
     }
-  } else throw new Error('Use init | claim <run-id> [lease-minutes] [destination-id] | checkpoint <run/checkpoint.json> | revise <run/revision.json> | promote <run/draft.json> | propose <run/proposal.json> | status | ready | validate-comparison <run/draft.json>');
+  } else throw new Error('Use init | claim <run-id> [lease-minutes] [destination-id] | checkpoint <run/checkpoint.json> | revise <run/revision.json> | promote <run/draft.json> | propose <run/proposal.json> | retry-now <run/retry.json> | status | ready | coverage | validate-comparison <run/draft.json>');
   console.log(JSON.stringify(result, null, 2));
   return result;
 }

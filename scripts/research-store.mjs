@@ -63,6 +63,16 @@ export function checkpointDestination(state, { id, token, runId, outcome, artifa
   return record;
 }
 
+// Clears a self-imposed retry timer on a blocked destination; the reason is logged and no approval state changes.
+export function retryNow(state, { id, reason, now = new Date().toISOString() }) {
+  const record = state.destinations[id];
+  if (record?.status !== 'blocked' || typeof reason !== 'string' || reason.trim().length < 10) throw new Error('retry-now needs a blocked destination and a reason of at least 10 characters');
+  record.history.push({ event: 'retry_now', at: now, reason, previousRetryAfter: record.retryAfter ?? null, blocker: record.blocker ?? null });
+  record.status = 'pending';
+  record.retryAfter = null;
+  return record;
+}
+
 export function recordReviewRound(state, { id, draftSha256, evidenceSha256, round, attempts, now = new Date().toISOString() }, maxRounds) {
   const record = state.destinations[id];
   if (record?.status !== 'awaiting_review' || record.artifact?.draftSha256 !== draftSha256 || record.artifact?.evidenceSha256 !== evidenceSha256) throw new Error('Review round must match the current checkpoint');

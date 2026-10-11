@@ -144,7 +144,21 @@ test('new dossier quality requires explained ratings, reconciled costs, meaningf
     }, costBasis: { hotels: { basis: 'derived', calculation: '10 nights * 140 + 300 tax', assumptions: 'No gala charge verified.', quantity: 10, unitUsd: 140, adjustmentsUsd: 300, totalUsd: 1700, rangeUsd: { low: 1700, high: 2000 }, sensitivity: 'Unverified gala fee may add up to 300 in this synthetic scenario.', ...citation } } }],
     dossier: { sections: [{ key: 'decision', paragraphs: [{ text: 'Sourced analysis.', ...citation }] }], itinerary: [{ visits: [{ name: 'Gallery district', significance: 'Local arts concentration.', whyVisit: 'Adds culture beyond the resort.', duration: 'Two hours', logistics: 'Confirm holiday opening.', cost: 'No admission quote.', ...citation }] }], actions: [{ priority: 'High', check: 'Verify gala fee', why: 'It could erase savings.', how: 'Check the direct room rate terms.', decisionImpact: 'Reject this property if inclusive total exceeds the alternative.' }] }
   };
+  const memoSections = ['My recommendation', 'Why this trip fits', 'How the trip unfolds', 'What it will really cost', 'Where this can go wrong', 'The best alternative'];
+  report.dossier.memo = { headline: 'Go to Vienna for the markets, then slow down', markdown: memoSections.map(title => `## ${title}\n\n${'I would choose this because the days are walkable and the food is the point. '.repeat(20)}`).join('\n\n') };
+  report.dossier.entry = { steps: ['Check eligibility', 'Apply', 'Attend'], mechanism: 'visa-free', requirement: 'Visa-free for Indian passport holders with a valid US visa.', leadTimeDays: 0, lastSafeApplyDate: null, feasibleByDepart: true, usVisaDependency: 'Valid US visa required', transit: 'No transit visa', fees: 'None', source: 'https://example.com/entry' };
+  const property = name => ({ name, area: 'Old town', tier: 'mid-range', whyHere: 'Walkable to dinner.', chaseTravel: 'unverified', chaseNote: 'Check the portal.', guestRating: { score: 8.9, scale: 10, source: 'Booking.com' }, nightlyUsd: 180, priceBasis: 'Dec 23 public rate', sources: ['https://example.com/hotel'] });
+  report.dossier.lodging = [property('Hotel A'), property('Hotel B')];
+  report.dossier.travelerVoices = [['https://example.com/a', 'A'], ['https://other.example.org/b', 'B'], ['https://third.example.net/c', 'C']].map(([url, author]) => ({ author, context: 'blog, 2025', takeaway: 'Go early.', url }));
   assert.doesNotThrow(() => validateDossierQuality(report));
+  for (const key of ['entry', 'lodging', 'travelerVoices']) {
+    const missing = structuredClone(report);
+    delete missing.dossier[key];
+    assert.throws(() => validateDossierQuality(missing), key === 'entry' ? /entry/ : key === 'lodging' ? /lodging/ : /voices/);
+  }
+  const withoutMemo = structuredClone(report);
+  delete withoutMemo.dossier.memo;
+  assert.throws(() => validateDossierQuality(withoutMemo), /advisor memo/);
   const withoutRating = structuredClone(report);
   delete withoutRating.candidates[0].ratings;
   assert.throws(() => validateDossierQuality(withoutRating), /native explained/);
@@ -173,4 +187,34 @@ test('new dossier quality requires explained ratings, reconciled costs, meaningf
   assert.deepEqual(dossierEvidence(report), ['capture.txt']);
   report.dossier.itinerary[0].visits[0].evidence = ['visit.txt'];
   assert.ok(dossierEvidence(report).includes('visit.txt'));
+});
+
+test('retry-now clears a blocked timer with a logged reason and leaves approval alone', async () => {
+  const { retryNow } = await import('../scripts/research-store.mjs');
+  const state = { destinations: { x: { id: 'x', status: 'blocked', retryAfter: '2099-01-01T00:00:00Z', blocker: { reason: 'r' }, history: [] }, y: { id: 'y', status: 'approved', history: [] } } };
+  assert.throws(() => retryNow(state, { id: 'y', reason: 'long enough reason' }), /blocked destination/);
+  assert.throws(() => retryNow(state, { id: 'x', reason: 'short' }), /blocked destination/);
+  const record = retryNow(state, { id: 'x', reason: 'User delegated judgment; timer was self-imposed' });
+  assert.equal(record.status, 'pending');
+  assert.equal(record.retryAfter, null);
+  assert.equal(record.history.at(-1).event, 'retry_now');
+  assert.equal(record.history.at(-1).previousRetryAfter, '2099-01-01T00:00:00Z');
+});
+
+test('preliminary coverage counts approved and awaiting-review dossiers but not pending, researching or blocked ones', async () => {
+  const { preliminaryCoverage } = await import('../scripts/dossier.mjs');
+  const { destinationId, digest } = await import('../scripts/research-store.mjs');
+  const trip = { destinations: [{ name: 'A' }, { name: 'B' }, { name: 'C' }, { name: 'D' }] };
+  const fingerprint = digest(trip);
+  const [a, b, c] = trip.destinations.map(destinationId);
+  const state = { destinations: {
+    [a]: { status: 'awaiting_review', artifact: { reportPath: 'a.json' } },
+    [b]: { status: 'approved', assessment: { reportPath: 'b.json' } },
+    [c]: { status: 'blocked' }
+  } };
+  const reports = { [a]: fingerprint, [b]: 'old' };
+  const result = preliminaryCoverage(state, trip, record => record.artifact ? reports[a] : reports[b]);
+  assert.equal(result.researched, 1);
+  assert.equal(result.total, 4);
+  assert.deepEqual(result.remaining.map(item => item.reason), ['trip_changed_or_unreadable', 'blocked', 'pending']);
 });

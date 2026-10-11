@@ -17,6 +17,33 @@ Distinguish regional seasonal climatology from forecasts; discuss daylight, rain
 
 Checkpoint only after scripts/publish.mjs validation succeeds. Hand off to travel-review; do not self-approve. Retain partial evidence after a blocker, with next action and retry date. Cite weak or missing evidence honestly. No invented price, image, review attempt or runtime identity.
 
+## Funnel Scope And Narrative
+
+Every configured destination gets its own end-to-end run (`.agents/workflows/decision-funnel.md`). The goal is the best possible trip for this location, argued on its own merits, not shaped around other destinations. Read `local/decision-profile.json`: US re-entry, remote work, the firm USD 7,000 ceiling and the 24-hour travel cap are user-attested constraints, cited as such. Entry authorization for an Indian passport holder remains a researched fact with a lead time and a last safe application date.
+
+The structured fields are the evidence ledger. Also write `dossier.memo` ({ headline, markdown }) following `.agents/skills/advisor-memo/SKILL.md`: first-person advisor voice, recommendation first, itinerary as narrative chapters explaining why each base and stop matters, real cost arithmetic, the strongest alternative, and what to do this week. A dossier without a memo fails checkpoint validation.
+
+Three more structured fields are required and validated at checkpoint:
+
+- `dossier.entry`: the entry route for an Indian passport holder who holds a valid US visa (`mechanism`, `requirement`, `usVisaDependency`, `transit`, `fees`, an official `source`). State `leadTimeDays` and `lastSafeApplyDate` counted back from the departure date, and `feasibleByDepart`. Also list `steps` (the official application order, at least three) and `documents` (what to prepare, from the official list), so the user can act on the report without leaving it. Eligibility answers from the official checker (nationality, purpose, family links) belong in `requirement`. A visa is a process to finish on time, not a hard bound: report the lead time and what it takes, and only mark `feasibleByDepart` false when the timeline genuinely cannot be met from today. Use the government, embassy or official e-visa page, never a visa-agency blog. If processing time is not published, set `leadTimeDays` to null, `feasibleByDepart` to null and write a `nextAction`; never guess true. Include any transit-country requirement for the routing you priced. Today's date matters: if the last safe date has passed or is within days, say so first in the memo.
+- `dossier.lodging`: two to four stays, each `mid-range`, `upper-mid-range` or `local-boutique`, with `area`, `whyHere`, a `guestRating` ({score, scale, source}), `nightlyUsd` with `priceBasis`, and public `sources`. Prefer places with strong recent guest ratings in a walkable or well-connected area; include a well-regarded independent local property when one exists. The user holds a Chase Sapphire Reserve and wants stays that can use its hotel benefits, so for each property set `chaseTravel` to `the-edit`, `chase-travel-portal`, `not-listed` or `unverified` with a `chaseNote`. Use only Chase's public pages to decide this. The Chase Travel portal requires the user's own login, so never sign in; if the status cannot be seen publicly, use `unverified` and say the user should check the portal. Do not state card benefits as fact unless a public Chase page shows them, do not subtract benefit value from cost, and do not let a card match outrank a clearly better stay.
+- `dossier.travelerVoices`: three to six real voices (`author`, `context` such as "blog, 2025", `takeaway`, `url`, optional `quote`). Use independent sources from at least two different sites: travel blogs, forum threads, local food writers, recent review text. Paraphrase in `takeaway`; a `quote` is optional and must be 30 words or fewer. Choose voices that confirm, complicate or contradict the official picture, especially about late December crowds, closures, weather and value. Never invent a voice or an author.
+
+Do not write generic travel-guide prose. Each section must be able to change the user's decision or the itinerary; otherwise cut it. Weave `travelerVoices` into the memo, attributed by name and context.
+
+## Price Ladder
+
+Never publish an allocation without workings. Work down this ladder per cost line and stop at the first rung you can source; label the line with the rung you reached.
+
+1. Observed: exact dates, two travelers, airline-direct or booking-provider rendered total.
+2. Observed aggregator: exact dates and travelers on Skyscanner, then Google Flights/Kayak as the existing source order allows.
+3. Derived: a rendered fare calendar, price graph or comparable-date quote scaled to the target dates with the adjustment shown. A cheapest-of-month calendar is a floor, not a quote; say so.
+4. Lodging: the property's own rendered rates for the nearest available dates, plus a holiday uplift measured from that same property's other rendered dates. Never invent a multiplier.
+5. Everything else: named restaurant menus, official fare tables and operator prices multiplied by counts from the itinerary.
+6. No source: mark the line `unsupported budget scenario`, exclude it from the value ranking, and add a user action that names the exact page and the three-minute check that would resolve it.
+
+If a source blocks you twice, move on and write down what the user can check in minutes. The memo reports a range and the reason for the range, for example "plan on USD 5,300 to 6,200; airfare is the swing factor", never a single unexplained total. Value is experience per dollar against a named alternative using both cost cases (`local/decision-profile.json` scoring).
+
 ## Mandatory Publication Handoff
 
 Before the task is complete, run `npm run portal` followed by `npm run pages:sync`. The sync rebuilds the public allowlist and commits/pushes only validated `docs/`. Do not push private drafts, captures or reports. If the host runtime lacks SSH or push fails, treat publication as incomplete and report the exact error.

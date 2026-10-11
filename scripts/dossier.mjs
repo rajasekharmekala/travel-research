@@ -2,6 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { digest, destinationId } from './research-store.mjs';
 import { valueLabels, priceConfidenceLabels, costBases } from './presentation.mjs';
+import { validateMemo } from './memo.mjs';
+import { validateEntry, validateLodging, validateVoices } from './decision-fields.mjs';
 
 export const sectionKeys = ['decision', 'entry_and_transit', 'climate_and_weather', 'experiences_and_closures', 'neighborhoods_and_lodging', 'transport_and_fatigue', 'budget_and_value', 'risks_and_cancellation', 'alternatives_and_pushback'];
 const text = value => typeof value === 'string' && value.trim().length > 0;
@@ -76,6 +78,11 @@ export function validateDossierQuality(report) {
     if (Object.values(candidate.costBasis ?? {}).some(line => line.basis === 'unsupported budget scenario')
       && (ratings.value.label !== 'Not assessable' || ratings.priceConfidence.label === 'Observed snapshot')) throw new Error('Unsupported budget scenario cannot support a comparative value rating or observed confidence');
   }
+  if (!report.dossier?.memo) throw new Error('New dossier requires an advisor memo (see the advisor-memo skill)');
+  validateMemo(report.dossier.memo);
+  validateEntry(report.dossier.entry);
+  validateLodging(report.dossier.lodging);
+  validateVoices(report.dossier.travelerVoices);
   for (const section of report.dossier?.sections ?? []) {
     if (!Array.isArray(section.paragraphs) || !section.paragraphs.length
       || section.paragraphs.some(paragraph => !text(paragraph.text) || !sourced(paragraph))) throw new Error(`New dossier section ${section.key} requires claim-level sourced paragraphs`);
@@ -90,6 +97,22 @@ export function validateDossierQuality(report) {
   if (!Array.isArray(report.dossier?.actions) || !report.dossier.actions.length
     || report.dossier.actions.some(action => !['High', 'Medium', 'Low'].includes(action.priority)
       || !['check', 'why', 'how', 'decisionImpact'].every(key => text(action[key])))) throw new Error('New dossier requires prioritized actions with why, how and decisionImpact');
+}
+
+// Preliminary comparison may use researched dossiers that are approved or still awaiting review; final comparison still requires approval.
+// readReportTripSha(record) returns the trip fingerprint stored in the report file, or null if unreadable.
+export function preliminaryCoverage(state, trip, readReportTripSha = () => null) {
+  const fingerprint = digest(trip);
+  const coverage = trip.destinations.map(destination => {
+    const record = state?.destinations?.[destinationId(destination)];
+    const status = record?.status ?? 'pending';
+    const researched = ['approved', 'awaiting_review'].includes(status) && !!(record.artifact ?? record.assessment);
+    if (!researched) return { id: destinationId(destination), destination: destination.name, status, researched: false, reason: status };
+    const reportSha = readReportTripSha(record);
+    const stale = reportSha !== fingerprint;
+    return { id: destinationId(destination), destination: destination.name, status, researched: !stale, reason: stale ? 'trip_changed_or_unreadable' : null };
+  });
+  return { researched: coverage.filter(item => item.researched).length, total: coverage.length, remaining: coverage.filter(item => !item.researched).map(({ destination, reason }) => ({ destination, reason })), coverage };
 }
 
 export function comparisonReadiness(state, trip, now = new Date()) {
