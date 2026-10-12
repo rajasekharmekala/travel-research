@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { reconcile, claimDestination, checkpointDestination, transaction, destinationId, recordReviewRound, requestRevision } from '../scripts/research-store.mjs';
+import { reconcile, claimDestination, checkpointDestination, transaction, destinationId, recordReviewRound, requestRevision, archiveResearch } from '../scripts/research-store.mjs';
 import { promoteDestination, validatePricingEffort } from '../scripts/research-artifacts.mjs';
 import { validateDossierQuality, dossierEvidence } from '../scripts/dossier.mjs';
 
@@ -144,6 +144,10 @@ test('new dossier quality requires explained ratings, reconciled costs, meaningf
     }, costBasis: { hotels: { basis: 'derived', calculation: '10 nights * 140 + 300 tax', assumptions: 'No gala charge verified.', quantity: 10, unitUsd: 140, adjustmentsUsd: 300, totalUsd: 1700, rangeUsd: { low: 1700, high: 2000 }, sensitivity: 'Unverified gala fee may add up to 300 in this synthetic scenario.', ...citation } } }],
     dossier: { sections: [{ key: 'decision', paragraphs: [{ text: 'Sourced analysis.', ...citation }] }], itinerary: [{ visits: [{ name: 'Gallery district', significance: 'Local arts concentration.', whyVisit: 'Adds culture beyond the resort.', duration: 'Two hours', logistics: 'Confirm holiday opening.', cost: 'No admission quote.', ...citation }] }], actions: [{ priority: 'High', check: 'Verify gala fee', why: 'It could erase savings.', how: 'Check the direct room rate terms.', decisionImpact: 'Reject this property if inclusive total exceeds the alternative.' }] }
   };
+  report.dossier.assessment = {
+    researchConfidence: { label: 'Moderate', rationale: 'Hotel fees remain uncertain', changeCondition: 'Verify inclusive room totals' },
+    itineraryConfidence: { label: 'Low', rationale: 'Holiday access is unverified', changeCondition: 'Confirm official holiday opening hours' }
+  };
   const memoSections = ['My recommendation', 'Why this trip fits', 'How the trip unfolds', 'What it will really cost', 'Where this can go wrong', 'The best alternative'];
   report.dossier.memo = { headline: 'Go to Vienna for the markets, then slow down', markdown: memoSections.map(title => `## ${title}\n\n${'I would choose this because the days are walkable and the food is the point. '.repeat(20)}`).join('\n\n') };
   report.dossier.entry = { steps: ['Check eligibility', 'Apply', 'Attend'], documents: ['Passport', 'Return ticket', 'Hotel confirmation'], mechanism: 'visa-free', requirement: 'Visa-free for Indian passport holders with a valid US visa.', leadTimeDays: 0, lastSafeApplyDate: null, feasibleByDepart: true, usVisaDependency: 'Valid US visa required', transit: 'No transit visa', fees: 'None', source: 'https://example.com/entry' };
@@ -217,4 +221,65 @@ test('preliminary coverage counts approved and awaiting-review dossiers but not 
   assert.equal(result.researched, 1);
   assert.equal(result.total, 4);
   assert.deepEqual(result.remaining.map(item => item.reason), ['trip_changed_or_unreadable', 'blocked', 'pending']);
+});
+
+test('completed rounds rotate all destinations and preserve prior research during refresh', () => {
+  const state = reconcile(null, trip);
+  state.firstDestinationId = destinationId(trip.destinations[0]);
+  for (const runId of ['first-round-a', 'first-round-b']) {
+    const record = claimDestination(state, { runId, now });
+    if (runId === 'first-round-a') assert.equal(record.id, state.firstDestinationId);
+    checkpointDestination(state, { id: record.id, token: record.lease.token, runId, outcome: 'awaiting_review', artifact: { runDir: runId, reportPath: `${runId}/draft.json`, draftSha256: runId, evidenceSha256: 'evidence' }, now });
+    record.reviewRounds = [{ round: 1, draftSha256: runId }];
+  }
+  assert.equal(state.round, 1);
+  const refreshed = claimDestination(state, { runId: 'second-round-a', now });
+  assert.equal(state.round, 2);
+  assert.equal(refreshed.id, state.firstDestinationId);
+  assert.equal(refreshed.previousReport.draftSha256, 'first-round-a');
+  assert.equal(refreshed.artifact, null);
+  assert.deepEqual(refreshed.reviewRounds, []);
+  assert.equal(refreshed.history.find(item => item.event === 'round_refresh').reviewRounds.length, 1);
+  const other = claimDestination(state, { runId: 'second-round-b', now });
+  assert.notEqual(other.id, refreshed.id);
+  assert.equal(claimDestination(state, { runId: 'no-third-round', now }), null);
+  assert.equal(state.round, 2);
+});
+
+test('a documented blocked attempt completes its round but preserves its retry delay', () => {
+  const state = reconcile(null, trip);
+  const blocked = claimDestination(state, { runId: 'blocked', now });
+  checkpointDestination(state, { id: blocked.id, token: blocked.lease.token, runId: 'blocked', outcome: 'blocked', blocker: { reason: 'Unavailable source', evidence: 'Captured failure', nextAction: 'Retry source' }, retryAfter: '2026-10-10T12:00:00Z', now });
+  const completed = claimDestination(state, { runId: 'completed', now });
+  checkpointDestination(state, { id: completed.id, token: completed.lease.token, runId: 'completed', outcome: 'awaiting_review', artifact: { runDir: 'run', draftSha256: 'draft', evidenceSha256: 'evidence' }, now });
+  assert.equal(claimDestination(state, { runId: 'next-round', now }).id, completed.id);
+  assert.equal(state.round, 2);
+  assert.equal(blocked.completedRound, 1);
+  assert.equal(claimDestination(state, { runId: 'retry', now: '2026-10-10T13:00:00Z' }).id, blocked.id);
+});
+
+test('fresh-round archives old runs and tracking outputs without starting research', async () => {
+  const local = await mkdtemp(path.join(os.tmpdir(), 'travel-archive-'));
+  try {
+    await mkdir(path.join(local, 'runs', 'old'), { recursive: true });
+    await mkdir(path.join(local, 'decision'), { recursive: true });
+    await writeFile(path.join(local, 'runs', 'old', 'draft.json'), 'OLD REPORT');
+    const state = reconcile(null, trip);
+    const firstId = destinationId(trip.destinations[0]);
+    state.destinations[firstId].status = 'awaiting_review';
+    state.destinations[firstId].artifact = { reportPath: 'runs/old/draft.json', runDir: 'runs/old', draftSha256: 'draft', evidenceSha256: 'evidence' };
+    await transaction(path.join(local, 'research'), () => ({ state }));
+    const result = await archiveResearch(local, trip, { reason: 'User-authorized clean round', firstDestinationId: firstId, now });
+    const saved = JSON.parse(await readFile(path.join(local, 'research', 'state.json'), 'utf8'));
+    assert.equal(result.startedResearch, false);
+    assert.equal(saved.round, 1);
+    assert.equal(saved.destinations[firstId].status, 'pending');
+    assert.equal(saved.destinations[firstId].completedRound, 0);
+    assert.equal(saved.destinations[firstId].lease, null);
+    assert.equal(await readFile(path.join(local, saved.destinations[firstId].previousReport.reportPath), 'utf8'), 'OLD REPORT');
+    assert.equal(JSON.parse(await readFile(path.join(local, result.archive, 'state-before.json'), 'utf8')).destinations[firstId].status, 'awaiting_review');
+    claimDestination(saved, { runId: 'active', now });
+    await transaction(path.join(local, 'research'), () => ({ state: saved }));
+    await assert.rejects(archiveResearch(local, trip, { reason: 'Should refuse', now }), /lease is active/);
+  } finally { await rm(local, { recursive: true, force: true }); }
 });

@@ -29,6 +29,10 @@ Run `node scripts/research.mjs checkpoint local/runs/<run-id>/checkpoint.json`. 
 
 After saving and validating a draft, attempt the reviewer preference chain (ao-haiku-5-5-sc, then ao-sonnet-5-5-sc, then Qwen/Qwen-latest (ehl)) in independent host-supported contexts for all configured passes, highest-available first. `TRAVEL_REVIEWER_MODEL` may force one chain member for the execution. Do not infer dispatch unavailability from missing registration metadata, null reviewer lists, or a missing automation file. Record actual invocation evidence, the actual model used, and `fallbackReason` whenever the primary is skipped. If this runtime exposes no dispatch mechanism or the calls fail, record the concrete capability/error evidence and missing passes, then retain the draft as awaiting review. Invoke dedicated reviewer tasks only when the host confirms they are registered. Never fabricate a dispatch, receipt, model identity, or approval.
 
+## Run Outcome
+
+Every scheduled execution ends by recording its outcome: `npm run scheduler-record -- <PROGRESS|BLOCKED> "<reason>"`. PROGRESS means a claim, review round, repricing, comparison, or publication moved forward. BLOCKED means nothing moved and the reason names the blocker. The recorder keeps a consecutive-BLOCKED streak in `local/status/scheduler.json`; three in a row prints STUCK and the pipeline needs intervention, not another idle tick. Never record PROGRESS without a real artifact, and never invent work to avoid BLOCKED.
+
 ## Research Boundaries
 
 Record the per-execution researcher choice as configuredModel. Pass it to scripts using `TRAVEL_RESEARCHER_MODEL` (or `TRAVEL_MODEL`). Actual model and modelEvidence stay null unless runtime-exposed. Include exactly `Actual researcher model identity is unverified; configured model is not runtime proof.` if unknown. Known mismatch against the effective configuration stops research; unknown runtime identity does not. executionMode is interactive or unknown. Changing the repository default does not switch the host model.

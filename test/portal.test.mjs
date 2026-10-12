@@ -47,8 +47,20 @@ test('pending destinations show real status without invented analysis or approva
 
 test('homepage separates available research from approval and uses readable dossier links', () => {
   const html = renderHome(trip, [{ ...entry, slug: 'test-destination', publicDossier: { reviewStatus: 'Provisional research: independent review is incomplete.' } }, { id: 'pending', status: 'pending', destination: { name: 'Pending' } }]);
-  assert.match(html, /<strong>1 \/ 2<\/strong><span>Research dossiers available/);
+  assert.match(html, /<strong>1 \/ 2<\/strong><span>Published dossiers/);
   assert.match(html, /<strong>0<\/strong><span>Independently approved/);
   assert.match(html, /Provisional research: independent review is incomplete/);
   assert.match(html, /href="destinations\/test-destination.html"[^>]*>Open dossier/);
+});
+
+test('reports explain lifecycle labels and distinguish published research from round attempts', () => {
+  const page = renderDestination(entry);
+  assert.match(page, /Assessment And Lifecycle/);
+  assert.match(page, /What The Labels Mean/);
+  assert.match(page, /Research confidence/);
+  assert.match(page, /Itinerary confidence/);
+  assert.match(page, /not human certification/);
+  const home = renderHome(trip, [{ ...entry, completedRound: 1, round: 2 }, { id: 'blocked', status: 'blocked', completedRound: 2, round: 2, destination: { name: 'Blocked' } }]);
+  assert.match(home, /Published dossiers/);
+  assert.match(home, /Attempted this round \(includes blockers\)/);
 });

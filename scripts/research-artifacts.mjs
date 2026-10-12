@@ -11,12 +11,13 @@ export function runFile(local, filename) {
   return resolved;
 }
 
-export function readArtifact(local, filename, config, trip, { reviewed = false, historicalPrices = false, requirePricingEffort = false, now = new Date() } = {}) {
+export function readArtifact(local, filename, config, trip, { reviewed = false, historicalPrices = false, historicalResearch = false, requirePricingEffort = false, now = new Date() } = {}) {
+  if (reviewed && historicalResearch) throw new Error('Historical inspection cannot grant current review approval');
   const resolved = runFile(local, filename);
   const bytes = fs.readFileSync(resolved);
   const report = JSON.parse(bytes);
   const directory = path.dirname(resolved);
-  validate(report, config, trip, directory, now, { historicalPrices });
+  validate(report, config, trip, directory, now, { historicalPrices, historicalResearch });
   if (requirePricingEffort) {
     validatePricingEffort(report, directory);
     validateDossierQuality(report);

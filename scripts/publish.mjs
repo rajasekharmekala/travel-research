@@ -19,7 +19,8 @@ function evidenceFile(relative, directory) {
 }
 import { validateDossier, dossierEvidence } from './dossier.mjs';
 import { loadAutomationConfig, configForReport } from './automation-config.mjs';
-export function validate(report, config, trip, directory, now = new Date(), { historicalPrices = false } = {}) {
+export function validate(report, config, trip, directory, now = new Date(), { historicalPrices = false, historicalResearch = false } = {}) {
+  if (historicalResearch && report.job !== 'destination') throw new Error('Historical inspection is only available for destination reports');
   if (!['discovery', 'comparison', 'destination'].includes(report.job) || !['ok', 'partial'].includes(report.status) || typeof report.summary !== 'string' || !Array.isArray(report.limitations) || !Array.isArray(report.coverage) || !Array.isArray(report.candidates)) throw new Error('Invalid report envelope');
   const desired = config.jobs[report.job === 'destination' ? 'discovery' : report.job].researcherModel;
   const configured = report.configuredModel ?? report.model;
@@ -44,8 +45,8 @@ export function validate(report, config, trip, directory, now = new Date(), { hi
   if (report.status === 'partial' && !report.limitations.length) throw new Error('Partial report requires limitations');
   if (!report.candidates.length) throw new Error('No candidates: save blocked status, do not publish a price report');
   for (const candidate of report.candidates) {
-    if (!names.includes(candidate.destination) || !report.coverage.includes(candidate.destination) || !trip.originAirports.includes(candidate.origin) || candidate.travelers !== trip.travelers || candidate.currency !== trip.currency) throw new Error('Candidate outside trip scope');
-    if (!trip.dateWindows.some(window => window.depart === candidate.depart && window.return === candidate.return)) throw new Error('Dates outside configured windows');
+    if (!names.includes(candidate.destination) || !report.coverage.includes(candidate.destination) || (!historicalResearch && (!trip.originAirports.includes(candidate.origin) || candidate.travelers !== trip.travelers || candidate.currency !== trip.currency))) throw new Error('Candidate outside trip scope');
+    if (!historicalResearch && !trip.dateWindows.some(window => window.depart === candidate.depart && window.return === candidate.return)) throw new Error('Dates outside configured windows');
     if (!['observed', 'estimate'].includes(candidate.priceType)) throw new Error('Invalid price type');
     if (candidate.priceType === 'observed') {
       const flight = candidate.quoteChecks?.flight;
@@ -55,7 +56,7 @@ export function validate(report, config, trip, directory, now = new Date(), { hi
       if (!hotel || hotel.guests !== trip.travelers || hotel.checkIn !== candidate.depart || hotel.checkOut !== candidate.return || hotel.nights !== nights || hotel.currency !== trip.currency || hotel.stayTotalUsd !== candidate.costs?.hotels || hotel.taxesAndFeesIncluded !== true || !hotel.property || !hotel.room || !hotel.cancellation) throw new Error('Observed hotels require exact-date room, nights, guests and inclusive stay total');
     }
     const time = Date.parse(candidate.observedAt);
-    if (!Number.isFinite(time) || now.getTime() - time > (historicalPrices && report.job === 'destination' ? 30 * 86400000 : 86400000) || time > now.getTime() + 300000) throw new Error('Stale price evidence');
+    if (!Number.isFinite(time) || (!historicalResearch && now.getTime() - time > (historicalPrices && report.job === 'destination' ? 30 * 86400000 : 86400000)) || time > now.getTime() + 300000) throw new Error('Stale price evidence');
     const costs = ['flights', 'hotels', 'meals', 'groundTransport', 'activities', 'insuranceAndContingency'].map(key => candidate.costs?.[key]);
     if (costs.some(cost => !Number.isFinite(cost) || cost < 0) || costs[0] <= 0 || costs[1] <= 0 || costs[5] <= 0 || !Number.isFinite(candidate.totalUsd) || Math.abs(costs.reduce((sum, cost) => sum + cost, 0) - candidate.totalUsd) > 1) throw new Error('Invalid party cost breakdown');
     for (const key of ['flightDetails', 'hotelDetails', 'reason', 'compromises', 'eligibility', 'recommendation']) if (typeof candidate[key] !== 'string' || !candidate[key].trim()) throw new Error(`Missing ${key}`);
@@ -64,7 +65,7 @@ export function validate(report, config, trip, directory, now = new Date(), { hi
     candidate.evidence.forEach(relative => evidenceFile(relative, directory));
     if (candidate.recommendation.toLowerCase() === 'book') throw new Error('Reports may compare, not authorize booking');
   }
-  if (report.job === 'destination') validateDossier(report, trip, directory, now, { allowAppendedDestinations: historicalPrices });
+  if (report.job === 'destination') validateDossier(report, trip, directory, now, { allowAppendedDestinations: historicalPrices, historicalResearch });
   return report;
 }
 import { renderReport } from './report-view.mjs';

@@ -11,6 +11,7 @@ import { readArtifact, promoteDestination, validateComparisonInputs } from '../s
 import { claimDestination, checkpointDestination, recordReviewRound } from '../scripts/research-store.mjs';
 import { buildPages } from '../scripts/build-pages.mjs';
 import { loadAutomationConfig, configForReport } from '../scripts/automation-config.mjs';
+import { loadPublicDossier } from '../scripts/public-dossier.mjs';
 
 const now = new Date('2026-10-09T12:00:00Z');
 const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'travel-publish-test-'));
@@ -275,7 +276,10 @@ test('comparison revalidates approved dossier receipts and detects changed evide
       assert.match(publicPage, /Provisional research/);
       assert.equal(publicPage.includes('local/runs'), false);
       fs.writeFileSync(path.join(publicWorkspace, 'local/runs/synthetic/hotel.txt'), 'CHANGED EVIDENCE');
-      assert.throws(() => buildPages(publicWorkspace), /checkpoint/);
+      assert.equal(buildPages(publicWorkspace).publicAssessments, 0);
+      const failedPage = fs.readFileSync(path.join(publicWorkspace, 'docs/destinations', pageFile), 'utf8');
+      assert.match(failedPage, /failed structural or evidence validation/);
+      assert.doesNotMatch(failedPage, /SYNTHETIC ANALYSIS/);
     } finally { fs.rmSync(publicWorkspace, { recursive: true, force: true }); }
     recordReviewRound(state, { id: record.id, draftSha256: artifact.draftSha256, evidenceSha256: artifact.evidenceSha256, round: 1, attempts: policy.passes.map(role => ({ role, status: 'approve', evidence: 'SYNTHETIC receipt' })) }, 4);
     artifact = readArtifact(local, filename, settings, trip, { reviewed: true, now });
@@ -288,54 +292,56 @@ test('comparison revalidates approved dossier receipts and detects changed evide
   } finally { fs.rmSync(local, { recursive: true, force: true }); }
 });
 
-test('historical dossiers survive appended destinations but not changed trip constraints or removals', () => {
+test('historical inspection preserves old reports without granting current approval', () => {
   const draft = destinationReport();
-  const expanded = { ...trip, destinations: [...trip.destinations, { name: 'Switzerland', airports: ['ZRH'], style: 'winter scenery' }] };
-  assert.throws(() => validate(draft, config, expanded, directory, now), /fingerprint/);
-  const beforeRemoval = { ...draft, tripSha256: digest(expanded) };
-  assert.throws(() => validate(beforeRemoval, config, trip, directory, now, { historicalPrices: true }), /fingerprint/);
-  assert.doesNotThrow(() => validate(draft, config, expanded, directory, now, { historicalPrices: true }));
-  assert.throws(() => validate(draft, config, { ...expanded, budget: { ...trip.budget, targetUsd: 9999 } }, directory, now, { historicalPrices: true }), /fingerprint/);
+  const changedTrip = { ...trip, dateWindows: [{ depart: '2027-01-03', return: '2027-01-13' }] };
+  const later = new Date('2026-12-09T12:00:00Z');
+  assert.throws(() => validate(draft, config, changedTrip, directory, later), /windows|Stale|fingerprint|current/);
+  validate(draft, config, changedTrip, directory, later, { historicalPrices: true, historicalResearch: true });
+  assert.throws(() => readArtifact(directory, 'unused.json', config, trip, { reviewed: true, historicalResearch: true }), /cannot grant/);
+  draft.dossier.assessment = { researchConfidence: { label: 'Moderate', rationale: 'Prices are estimates', changeCondition: 'Verify inclusive totals' }, itineraryConfidence: { label: 'Low', rationale: 'Holiday hours unknown', changeCondition: 'Verify holiday access' } };
+  validate(draft, config, trip, directory, now);
+  draft.dossier.assessment.researchConfidence.label = '99%';
+  assert.throws(() => validate(draft, config, trip, directory, now), /Confidence/);
 });
 
-test('repository researcher default validates disclosed model uncertainty and preserves historical reports', () => {
-  const project = fs.mkdtempSync(path.join(os.tmpdir(), 'travel-researcher-config-test-'));
-  const local = path.join(project, 'local');
-  const previousModel = process.env.TRAVEL_RESEARCHER_MODEL;
-  delete process.env.TRAVEL_RESEARCHER_MODEL;
+test('historical pages survive a corrupt refresh and retain full prices and lifecycle labels', () => {
+  const workspace = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'travel-refresh-page-')));
+  const local = path.join(workspace, 'local');
   try {
-    fs.mkdirSync(path.join(project, '.agents/config'), { recursive: true });
-    fs.mkdirSync(local);
-    fs.writeFileSync(path.join(project, '.agents/config/researcher.json'), JSON.stringify({ model: 'default-test' }));
-    const defaults = loadAutomationConfig(local);
-    assert.equal(defaults.jobs.discovery.researcherModel, 'default-test');
-    assert.equal(defaults.jobs.comparison.researcherModel, 'default-test');
-    const draft = report();
-    draft.configuredModel = 'default-test';
-    draft.model = null;
-    draft.modelEvidence = null;
-    draft.limitations.push('Actual researcher model identity is unverified; configured model is not runtime proof.');
-    validate(draft, defaults, trip, directory, now);
-    draft.model = 'wrong-test';
-    draft.modelEvidence = 'TEST runtime evidence';
-    assert.throws(() => validate(draft, defaults, trip, directory, now), /mismatch/);
-    validate(report(), configForReport(defaults, report()), trip, directory, now);
-    process.env.TRAVEL_RESEARCHER_MODEL = 'host-test';
-    assert.equal(loadAutomationConfig(local).jobs.discovery.researcherModel, 'host-test');
-    assert.equal(configForReport(loadAutomationConfig(local), report()).jobs.discovery.researcherModel, 'host-test');
-    delete process.env.TRAVEL_RESEARCHER_MODEL;
-    fs.writeFileSync(path.join(local, 'automation.json'), JSON.stringify({ jobs: { discovery: { researcherModel: 'default-test' }, comparison: {} } }));
-    const explicitLocal = loadAutomationConfig(local);
-    assert.equal(configForReport(explicitLocal, report()).jobs.discovery.researcherModel, 'default-test');
-    assert.equal(configForReport(explicitLocal, report()).jobs.comparison.researcherModel, 'research-test');
-    fs.rmSync(path.join(local, 'automation.json'));
-    fs.writeFileSync(path.join(project, '.agents/config/researcher.json'), JSON.stringify({ model: 'auto' }));
-    assert.throws(() => loadAutomationConfig(local), /Explicit.*researcher model/);
-    fs.rmSync(path.join(project, '.agents/config/researcher.json'));
-    assert.equal(loadAutomationConfig(local, report()).jobs.discovery.researcherModel, 'research-test');
-  } finally {
-    if (previousModel === undefined) delete process.env.TRAVEL_RESEARCHER_MODEL;
-    else process.env.TRAVEL_RESEARCHER_MODEL = previousModel;
-    fs.rmSync(project, { recursive: true, force: true });
-  }
+    const run = path.join(local, 'runs', 'old');
+    fs.mkdirSync(run, { recursive: true });
+    fs.mkdirSync(path.join(local, 'research'), { recursive: true });
+    fs.mkdirSync(path.join(workspace, '.agents', 'config'), { recursive: true });
+    for (const file of ['flight.txt', 'hotel.txt']) fs.writeFileSync(path.join(run, file), 'SYNTHETIC EVIDENCE ONLY');
+    const policy = { model: 'qwen-test', passes: ['source', 'consistency', 'coverage', 'opportunities'], max_rounds: 4, require_validator_pass: true };
+    const settings = applyReviewPolicy(config, policy);
+    const draft = destinationReport();
+    fs.writeFileSync(path.join(run, 'draft.json'), JSON.stringify(draft));
+    const artifact = readArtifact(local, path.join(run, 'draft.json'), settings, trip, { now });
+    const changedTrip = { ...trip, dateWindows: [{ depart: '2027-01-03', return: '2027-01-13' }] };
+    const state = reconcile(null, changedTrip);
+    const record = state.destinations[draft.destinationId];
+    record.previousReport = { reportPath: artifact.reportPath, runDir: artifact.runDir, draftSha256: artifact.draftSha256, evidenceSha256: artifact.evidenceSha256 };
+    record.status = 'researching';
+    fs.writeFileSync(path.join(local, 'trip.json'), JSON.stringify(changedTrip));
+    fs.writeFileSync(path.join(local, 'automation.json'), JSON.stringify(config));
+    fs.writeFileSync(path.join(workspace, '.agents', 'config', 'reviewer.json'), JSON.stringify(policy));
+    fs.writeFileSync(path.join(local, 'research', 'state.json'), JSON.stringify(state));
+    assert.equal(buildPages(workspace).publicAssessments, 1);
+    const pageName = fs.readdirSync(path.join(workspace, 'docs', 'destinations')).find(file => !/^[a-f0-9]{16}\.html$/.test(file));
+    const html = fs.readFileSync(path.join(workspace, 'docs', 'destinations', pageName), 'utf8');
+    assert.match(html, /Historical; refresh needed/);
+    assert.match(html, /Assessment And Lifecycle/);
+    assert.match(html, /Party cost/);
+    const badRun = path.join(local, 'runs', 'bad');
+    fs.mkdirSync(badRun);
+    fs.writeFileSync(path.join(badRun, 'draft.json'), '{invalid json');
+    record.artifact = { reportPath: 'runs/bad/draft.json', runDir: 'runs/bad', draftSha256: 'bad', evidenceSha256: 'bad' };
+    fs.writeFileSync(path.join(local, 'research', 'state.json'), JSON.stringify(state));
+    const fallback = loadPublicDossier(workspace, changedTrip, draft.destinationId);
+    assert.equal(fallback.reviewApproved, false);
+    assert.match(fallback.researchProgress, /Refresh failed/);
+    assert.equal(buildPages(workspace).publicAssessments, 1);
+  } finally { fs.rmSync(workspace, { recursive: true, force: true }); }
 });

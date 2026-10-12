@@ -126,3 +126,14 @@ test('public dossier exposes native ratings, calculations, exact safe search lin
   for (const expected of ['Fees and corridor transfers change the recommendation.', 'Value rating: Conditional', '1400 room + 300 taxes = 1700 party total', 'No gala charge verified.', 'Search Evidence And Rejected Leads', 'Two adults, ten nights', 'arrivalDate=2026-12-23', 'room1NumAdults=2', 'Why it matters:', 'Adds culture to a coastal itinerary.', 'https://example.com/art-district', '2026-12-24']) assert.ok(html.includes(expected), expected);
   for (const hidden of ['private@example.com', 'SECRET', 'email=', 'token=', 'sort=', 'hotel.txt', 'Not yet rated']) assert.equal(html.includes(hidden), false, hidden);
 });
+
+test('public lifecycle table retains prices and explains confidence without probabilities', () => {
+  const dossier = { thesis: 'TEST', researchDate: '2026-10-09', reviewStatus: 'Unavailable: no separate reviewer context', freshness: 'Historical; refresh needed', researchProgress: 'Refresh in progress', assessment: { researchConfidence: { label: 'Moderate', rationale: 'Inclusive fares remain estimates' }, itineraryConfidence: { label: 'Low', rationale: 'Holiday access is unverified' } }, options: [], sections: [], itinerary: [], flags: [], actions: [], limitations: [] };
+  const html = renderPublicDossier({ destination: { name: 'TEST' }, publicDossier: dossier });
+  assert.match(html, /Assessment And Lifecycle/);
+  assert.match(html, /What The Labels Mean/);
+  assert.match(html, /Moderate: Inclusive fares remain estimates/);
+  assert.match(html, /Historical; refresh needed/);
+  assert.match(html, /Refresh in progress/);
+  assert.match(html, /Unavailable: no separate reviewer context/);
+});

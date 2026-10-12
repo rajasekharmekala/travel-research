@@ -2,9 +2,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { readArtifact, runFile } from './research-artifacts.mjs';
 import { applyReviewPolicy } from './review-policy.mjs';
-import { pageShell } from './portal-view.mjs';
+import { pageShell, renderLifecycle } from './portal-view.mjs';
 import { loadPresentation } from './presentation.mjs';
 import { renderMarkdown, splitMemoTitle } from './memo.mjs';
+import { digest } from './research-store.mjs';
 
 const escape = value => String(value ?? '').replace(/[&<>"']/g, character => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
@@ -198,16 +199,26 @@ export function projectPublicDossier(report, trip, reviewStatus, findings = [], 
     actions: report.dossier.actions?.length
       ? report.dossier.actions.map(action => ({ priority: action.priority, text: clean(action.check), why: clean(action.why), how: clean(action.how), decisionImpact: clean(action.decisionImpact) }))
       : report.dossier.nextChecks.map((item, index) => ({ priority: index < 4 ? 'High' : 'Medium', text: clean(item) })),
-    limitations: report.limitations.map(clean)
+    limitations: report.limitations.map(clean),
+    assessment: report.dossier.assessment ? Object.fromEntries(Object.entries(report.dossier.assessment).map(([key, value]) => [key, { label: clean(value.label), rationale: clean(value.rationale), ...(value.changeCondition ? { changeCondition: clean(value.changeCondition) } : {}) }])) : null
   };
 }
 
 export function loadPublicDossier(workspace, trip, id) {
+  try { return loadDossierSnapshot(workspace, trip, id); } catch (error) {
+    const state = read(path.join(workspace, 'local', 'research', 'state.json'));
+    if (!state.destinations?.[id]?.previousReport) throw error;
+    const previous = loadDossierSnapshot(workspace, trip, id, true);
+    return { ...previous, reviewApproved: false, researchProgress: 'Refresh failed; previous validated snapshot retained', flags: [...previous.flags, 'Latest refresh failed structural or evidence validation. The previous snapshot remains available.'] };
+  }
+}
+
+function loadDossierSnapshot(workspace, trip, id, previousOnly = false) {
   const local = path.join(workspace, 'local');
   const stateFile = path.join(local, 'research/state.json');
   if (!fs.existsSync(stateFile)) return null;
   const record = read(stateFile).destinations?.[id];
-  const reference = record?.status === 'approved' ? record.assessment : record?.artifact;
+  const reference = previousOnly ? record?.previousReport : (record?.status === 'approved' ? record.assessment : record?.artifact) ?? record?.previousReport;
   if (!reference?.reportPath) return null;
   const filename = runFile(local, path.resolve(local, reference.reportPath));
   const report = read(filename);
@@ -222,14 +233,7 @@ export function loadPublicDossier(workspace, trip, id) {
     privateBrowserRequired: false
   };
   const config = applyReviewPolicy(settings, policy);
-  let artifact;
-  try {
-    artifact = readArtifact(local, filename, config, trip, { historicalPrices: true });
-  } catch (error) {
-    // Research drafted for an earlier trip window is superseded, not publishable; the destination shows as pending until re-run.
-    if (/configured windows|fingerprint is stale/.test(error.message)) return null;
-    throw error;
-  }
+  const artifact = readArtifact(local, filename, config, trip, { historicalPrices: true, historicalResearch: true });
   if (report.job !== 'destination' || report.destinationId !== id || artifact.draftSha256 !== reference.draftSha256 || artifact.evidenceSha256 !== reference.evidenceSha256) {
     throw new Error('Public dossier requires a matching validated checkpoint');
   }
@@ -251,6 +255,13 @@ export function loadPublicDossier(workspace, trip, id) {
   });
   const reviewFile = path.join(path.dirname(filename), 'review/state.json');
   const review = fs.existsSync(reviewFile) ? read(reviewFile) : null;
+  const matchingReview = review?.draftSha256 === artifact.draftSha256 && review?.evidenceSha256 === artifact.evidenceSha256;
+  if (!reviewApproved && matchingReview) {
+    const attempts = record.reviewRounds?.filter(round => round.draftSha256 === artifact.draftSha256 && round.evidenceSha256 === artifact.evidenceSha256).flatMap(round => round.attempts ?? []) ?? [];
+    if ((review.unresolvedFindings ?? []).length || attempts.some(attempt => ['revise', 'block'].includes(attempt.status))) reviewStatus = 'Changes requested: independent AI review retains unresolved findings.';
+    else if (attempts.some(attempt => attempt.status === 'unavailable')) reviewStatus = 'Unavailable: one or more independent AI review passes could not run.';
+    else reviewStatus = 'Pending: independent AI approval for this draft is not verified.';
+  }
   const findings = review?.draftSha256 === artifact.draftSha256 && review?.evidenceSha256 === artifact.evidenceSha256
     ? (review.unresolvedFindings ?? []).map(finding => finding.message)
     : [];
@@ -261,7 +272,14 @@ export function loadPublicDossier(workspace, trip, id) {
     if (receipt.draftSha256 !== artifact.draftSha256 || receipt.evidenceSha256 !== artifact.evidenceSha256) continue;
     findings.push(...(receipt.findings ?? []).filter(finding => !finding.resolved).map(finding => `${role}: ${finding.message}`));
   }
-  return { ...projectPublicDossier(report, trip, reviewStatus, findings, presentation), reviewApproved };
+  const projected = projectPublicDossier(report, trip, reviewStatus, findings, presentation);
+  const oldestObservation = Math.min(...report.dossier.sections.map(section => Date.parse(section.observedAt)));
+  const historical = report.tripSha256 !== digest(trip) || Date.now() - oldestObservation > 30 * 86400000;
+  if (previousOnly || reference === record.previousReport) {
+    reviewApproved = false;
+    projected.reviewStatus = 'Historical snapshot: any prior AI approval applies only to that archived version, not the new research round.';
+  }
+  return { ...projected, reviewApproved, freshness: historical ? 'Historical; refresh needed' : 'Current', researchProgress: record.status === 'researching' ? 'Refresh in progress' : record.status === 'blocked' ? 'Incomplete / blocked' : record.status === 'pending' ? 'Refresh queued' : report.status === 'partial' ? 'Incomplete' : 'Complete', round: read(stateFile).round ?? 1, completedRound: record.completedRound ?? 0 };
 }
 
 const figure = image => image ? `<figure class="section-image"><img src="${escape(image.src)}" alt="${escape(image.alt)}" loading="lazy"><figcaption>Image: ${escape(image.artist)}, ${escape(image.license)}, <a href="${escape(image.sourceUrl)}" rel="noreferrer">${escape(image.title)} on Wikimedia Commons</a></figcaption></figure>` : '';
@@ -304,5 +322,5 @@ export function renderPublicDossier(entry) {
   const decisionNav = `${dossier.entry ? '<a href="#entry">Entry And Visa</a>' : ''}${dossier.lodging?.length ? '<a href="#lodging">Where To Stay</a>' : ''}${dossier.travelerVoices?.length ? '<a href="#voices">What Travelers Say</a>' : ''}`;
   const memoNav = dossier.memo ? '<a href="#memo">Advisor memo</a><a href="#workings">The workings</a>' : '';
   const content = `${styles}<main><section class="intro"><div class="wrap"><p class="eyebrow">Destination dossier</p><h1>${escape(entry.destination.name)}</h1><p class="deck">${escape(dossier.thesis)}</p><p>Research snapshot: ${escape(dossier.researchDate)}. ${escape(dossier.reviewStatus)}</p></div></section><div class="wrap book"><aside class="contents"><strong>In This Dossier</strong><nav>${memoNav}${decisionNav}<a href="#options">Options And Value</a><a href="#itinerary">Itinerary</a><a href="#flags">Open Flags</a><a href="#actions">Your Action Plan</a><a href="../index.html">All destinations</a></nav></aside><article><p class="notice">For your decision, not permission to book. Estimates, unverified eligibility and unresolved conditions remain visible. Ratings are researcher-prepared labels with a stated basis, not independent reviewer approvals. Trip-purpose wording is removed from this public view.</p>${memoSection}${entrySection}<section class="chapter" id="options"><h2>Options And Value</h2><p>Planning confidence: provisional; route timing, closures and reservations need confirmation. Booking readiness: not verified. Ratings are qualitative labels with a stated basis, not numerical scores.</p>${options}</section>${chapters}<section class="chapter" id="itinerary"><h2>Provisional Itinerary</h2><p>Itinerary follows ${escape(dossier.options[dossier.itineraryCandidateIndex ?? 0]?.label ?? 'the recorded candidate')}.</p><ol class="itinerary">${itinerary}</ol></section>${lodgingSection}${voicesSection}<section class="chapter" id="flags"><h2>Open Flags</h2>${list([...new Set(dossier.flags)])}</section><section class="chapter" id="actions"><h2>Your Action Plan</h2><p>Resolve high-priority checks before nonrefundable commitments. Verified routing, inclusive prices and eligibility can change the value assessment; changed hours or weather can change the itinerary.</p><ol>${dossier.actions.map(action => `<li><strong>${escape(action.priority)} priority:</strong> ${escape(action.text)}${action.why ? `<p><strong>Why:</strong> ${escape(action.why)}</p><p><strong>How to check:</strong> ${escape(action.how)}</p><p><strong>Decision impact:</strong> ${escape(action.decisionImpact)}</p>` : ''}</li>`).join('')}</ol></section><section class="chapter"><h2>Limitations And Freshness</h2><p>Research expires after 30 days; price snapshots become historical after 24 hours. Always recheck current availability. Failed or incomplete checks are not confirmed facts.</p>${list(dossier.limitations)}</section></article></div></main>`;
-  return pageShell(entry.destination.name, content, { home: '../index.html' }).replace('Private research &middot;', 'Published research &middot;');
+  return pageShell(entry.destination.name, content.replace('<article>', `<article>${renderLifecycle(entry)}`), { home: '../index.html' }).replace('Private research &middot;', 'Published research &middot;');
 }

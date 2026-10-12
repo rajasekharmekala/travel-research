@@ -61,16 +61,24 @@ export function buildPages(workspace = project) {
   if (!Array.isArray(previous.files) || previous.files.some(file => !generatedFile.test(file))) throw new Error('Invalid generated-pages manifest');
   fs.mkdirSync(outputDirectory, { recursive: true });
   const pages = destinationPages(trip);
+  const stateFile = path.join(privateDirectory, 'research', 'state.json');
+  const researchState = fs.existsSync(stateFile) ? readJson(stateFile) : { round: 1, destinations: {} };
   const entries = pages.map(page => {
-    const publicDossier = loadPublicDossier(workspace, trip, page.id);
+    let publicDossier = null;
+    let publicationFailed = false;
+    try { publicDossier = loadPublicDossier(workspace, trip, page.id); } catch { publicationFailed = true; }
+    const record = researchState.destinations?.[page.id];
     return {
       id: page.id,
       slug: page.slug,
-      status: publicDossier ? (publicDossier.reviewApproved ? 'approved' : 'awaiting_review') : 'pending',
+      status: publicationFailed ? 'invalid' : publicDossier?.reviewApproved ? 'approved' : record?.status === 'approved' ? 'stale' : record?.status ?? (publicDossier ? 'awaiting_review' : 'pending'),
+      round: researchState.round ?? 1,
+      completedRound: record?.completedRound ?? 0,
+      blocker: record?.blocker ? { reason: record.blocker.reason, nextAction: record.blocker.nextAction } : null,
       destination: { name: page.name },
       publicDossier,
       ...(publicDossier ? { report: { dossier: { thesis: publicDossier.thesis, verdict: publicDossier.verdict } } } : {}),
-      publicMessage: 'No validated destination research is available yet.'
+      publicMessage: publicationFailed ? 'The saved research failed structural or evidence validation and cannot be displayed. A corrected research run is needed; no unsupported content has been published.' : 'No validated destination research is available yet.'
     };
   });
 

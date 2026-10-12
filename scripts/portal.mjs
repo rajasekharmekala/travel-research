@@ -28,16 +28,16 @@ export function buildPortal(project = root, now = new Date()) {
     const id = destinationId(destination);
     const record = state.destinations[id];
     const ready = readiness.coverage.find(item => item.id === id);
-    const entry = { ...record, status: record.status === 'approved' && !ready.ready ? 'stale' : record.status };
+    const entry = { ...record, round: state.round, status: record.status === 'approved' && !ready.ready ? 'stale' : record.status };
     const image = media[destination.name];
     if (image && /^media\/[a-z0-9-]+\.(jpg|png|webp)$/.test(image.file) && fs.existsSync(path.join(output, image.file))) entry.image = image;
-    const artifact = record.status === 'approved' ? record.assessment : record.artifact;
+    const artifact = (record.status === 'approved' ? record.assessment : record.artifact) ?? record.previousReport;
     if (artifact?.reportPath) {
       try {
         const reportPath = path.join(local, artifact.reportPath);
         const report = readJson(reportPath);
         const config = configForReport(baseConfig, report);
-        const loaded = readArtifact(local, reportPath, config, trip, { reviewed: record.status === 'approved', historicalPrices: true, now });
+        const loaded = readArtifact(local, reportPath, config, trip, { historicalResearch: record.status !== 'approved', reviewed: record.status === 'approved', historicalPrices: true, now });
         if (loaded.report.job !== 'destination' || loaded.report.destinationId !== id || loaded.draftSha256 !== artifact.draftSha256 || loaded.evidenceSha256 !== artifact.evidenceSha256 || (record.status === 'approved' && artifact.policySha256 !== digest(policy))) throw new Error('Stored dossier identity, hashes or policy no longer match');
         entry.report = loaded.report;
         if (entry.status === 'approved') entry.receipts = policy.passes.map(role => readJson(path.join(local, artifact.runDir, 'review', `${role}.review.json`)));

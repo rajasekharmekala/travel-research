@@ -22,3 +22,9 @@ Use scripts/public-dossier.mjs for the shared-theme public projection. Include o
 For every completed execution, run `npm run portal`, then `npm run pages:sync`, and confirm the command succeeds or reports no changes. The sync rebuilds/validates the allowlisted public `docs/` tree, commits only docs changes, and non-force pushes `main`. It refuses wrong branches/remotes, conflicting writes, and unlisted docs files. A sync failure means Pages was not published; disclose that rather than claiming completion.
 
 Review clearance consumes only genuine current receipts. The coordinator must attempt the configured deployment before reporting it unavailable; null metadata or absent dedicated registration alone is not evidence of failure. Publish validated privacy-safe research provisionally when clearance is missing, showing actual review status and open findings; never invent approval.
+
+## Visible Lifecycle And Expenses
+
+Follow `.agents/workflows/decision-funnel.md` Research Rounds And Visible Reports. Every dossier includes its assessment table and full label legend. Publish validated provisional, incomplete, estimate-only and historical research with honest statuses; stale analysis must not appear as never researched. Keep the previous validated report visible during queued, running or failed refreshes. Archived approval is not approval for a new round. Historical inspection never grants current review approval.
+
+Public reports show flight and hotel expenses, taxes, baggage, cancellation conditions, dates, airports, traveler counts, party totals and document assessments. This supersedes older skill wording that treated dates, airports or costs as private. Filter credentials, payment/passport identifiers, account data, private artifact paths and trip-purpose framing; do not hide cost findings merely because their raw captures remain private. Do not start research or resume schedules while the user has placed destination runs on hold.

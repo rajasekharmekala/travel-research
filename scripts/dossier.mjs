@@ -23,18 +23,18 @@ export function dossierEvidence(report) {
   ])];
 }
 
-export function validateDossier(report, trip, directory, now = new Date(), { allowAppendedDestinations = false } = {}) {
+export function validateDossier(report, trip, directory, now = new Date(), { allowAppendedDestinations = false, historicalResearch = false } = {}) {
   const destination = trip.destinations.find(item => destinationId(item) === report.destinationId);
   const dossier = report.dossier;
   if (!destination || report.coverage.length !== 1 || report.coverage[0] !== destination.name || report.candidates.some(candidate => candidate.destination !== destination.name)) throw new Error('Dossier must cover exactly its configured destination');
   const matchingTrip = report.tripSha256 === digest(trip) || (allowAppendedDestinations && trip.destinations.some((destination, index) => index < trip.destinations.length - 1 && report.tripSha256 === digest({ ...trip, destinations: trip.destinations.slice(0, index + 1) })));
-  if (!matchingTrip) throw new Error('Dossier trip fingerprint is stale');
+  if (!matchingTrip && !historicalResearch) throw new Error('Dossier trip fingerprint is stale');
   if (!dossier || !['viable', 'conditional', 'not_recommended'].includes(dossier.verdict) || !text(dossier.thesis) || !Array.isArray(dossier.unresolved) || !Array.isArray(dossier.nextChecks)) throw new Error('Dossier requires verdict, thesis, unresolved questions and next checks');
   if (!Array.isArray(dossier.sections) || dossier.sections.length !== sectionKeys.length || new Set(dossier.sections.map(section => section.key)).size !== sectionKeys.length) throw new Error('Dossier requires every analysis section exactly once');
   const referenced = new Set();
   for (const section of dossier.sections) {
     if (!sectionKeys.includes(section.key) || !text(section.text) || !Array.isArray(section.sources) || !section.sources.length || !section.sources.every(publicUrl) || !Array.isArray(section.evidence) || !section.evidence.length) throw new Error('Each dossier section requires analysis, public sources and saved evidence');
-    if (!Number.isFinite(Date.parse(section.observedAt)) || Date.parse(section.observedAt) > now.getTime() + 300000 || now.getTime() - Date.parse(section.observedAt) > 30 * 86400000) throw new Error('Dossier section evidence must be current within 30 days');
+    if (!Number.isFinite(Date.parse(section.observedAt)) || Date.parse(section.observedAt) > now.getTime() + 300000 || (!historicalResearch && now.getTime() - Date.parse(section.observedAt) > 30 * 86400000)) throw new Error('Dossier section evidence must be current within 30 days');
     for (const file of section.evidence) referenced.add(file);
   }
   const climate = dossier.sections.find(section => section.key === 'climate_and_weather');
@@ -52,11 +52,21 @@ export function validateDossier(report, trip, directory, now = new Date(), { all
     const resolved = path.resolve(directory, file);
     if (!resolved.startsWith(path.resolve(directory) + path.sep) || !fs.existsSync(resolved) || !fs.realpathSync(resolved).startsWith(fs.realpathSync(directory) + path.sep) || !fs.statSync(resolved).isFile() || fs.statSync(resolved).size === 0) throw new Error('Dossier evidence must stay inside its run directory');
   }
+  if (report.dossier?.assessment) {
+    for (const key of ['researchConfidence', 'itineraryConfidence']) {
+      const confidence = report.dossier.assessment[key];
+      if (!['High', 'Moderate', 'Low', 'Insufficient evidence'].includes(confidence?.label) || !text(confidence.rationale) || !text(confidence.changeCondition)) throw new Error('Confidence requires an enumerated label, rationale and change condition');
+    }
+  }
   return dossier;
 }
 
 export function validateDossierQuality(report) {
   if (report.job !== 'destination') return;
+  for (const key of ['researchConfidence', 'itineraryConfidence']) {
+    const confidence = report.dossier?.assessment?.[key];
+    if (!['High', 'Moderate', 'Low', 'Insufficient evidence'].includes(confidence?.label) || !text(confidence.rationale) || !text(confidence.changeCondition)) throw new Error('New dossier requires explained research and itinerary confidence');
+  }
   const evidenceFiles = new Set(report.browser?.evidenceFiles ?? []);
   const sourced = item => Array.isArray(item?.sources) && item.sources.length > 0 && item.sources.every(publicUrl)
     && Array.isArray(item.evidence) && item.evidence.length > 0 && item.evidence.every(file => evidenceFiles.has(file));

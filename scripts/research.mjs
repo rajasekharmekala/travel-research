@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { reconcile, claimDestination, checkpointDestination, transaction, recordReviewRound, requestRevision, retryNow, digest } from './research-store.mjs';
+import { reconcile, claimDestination, checkpointDestination, transaction, recordReviewRound, requestRevision, retryNow, digest, archiveResearch } from './research-store.mjs';
 import { comparisonReadiness, preliminaryCoverage } from './dossier.mjs';
 import { readArtifact, promoteDestination, validateComparisonInputs, runFile } from './research-artifacts.mjs';
 import { applyReviewPolicy } from './review-policy.mjs';
@@ -17,7 +17,9 @@ export async function main(args = process.argv.slice(2)) {
   const trip = json(path.join(local, 'trip.json'));
   const config = applyReviewPolicy(loadAutomationConfig(local), json(path.join(root, '.agents/config/reviewer.json')));
   let result;
-  if (['init', 'claim', 'checkpoint', 'promote', 'propose', 'revise', 'record-review', 'retry-now'].includes(action)) {
+  if (action === 'fresh-round') {
+    result = await archiveResearch(local, trip, { reason: input, firstDestinationId: argument ?? null });
+  } else if (['init', 'claim', 'checkpoint', 'promote', 'propose', 'revise', 'record-review', 'retry-now'].includes(action)) {
     result = await transaction(store, async existing => {
       const state = reconcile(existing, trip);
       state.reviewPolicySha256 = digest(config.reviewPolicy);
@@ -72,7 +74,7 @@ export async function main(args = process.argv.slice(2)) {
         result = validateComparisonInputs(artifact.report, state, trip, config, local);
       }
     }
-  } else throw new Error('Use init | claim <run-id> [lease-minutes] [destination-id] | checkpoint <run/checkpoint.json> | revise <run/revision.json> | promote <run/draft.json> | propose <run/proposal.json> | retry-now <run/retry.json> | status | ready | coverage | validate-comparison <run/draft.json>');
+  } else throw new Error('Use fresh-round <reason> [first-destination-id] | init | claim <run-id> [lease-minutes] [destination-id] | checkpoint <run/checkpoint.json> | revise <run/revision.json> | promote <run/draft.json> | propose <run/proposal.json> | retry-now <run/retry.json> | status | ready | coverage | validate-comparison <run/draft.json>');
   console.log(JSON.stringify(result, null, 2));
   return result;
 }

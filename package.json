@@ -8,6 +8,7 @@
     "publish-report": "node scripts/publish.mjs publish",
     "publish-best-effort": "node scripts/publish.mjs publish-best-effort",
     "research": "node scripts/research.mjs",
+    "scheduler-record": "node scripts/scheduler-status.mjs record",
     "portal": "node scripts/portal.mjs",
     "pages": "node scripts/build-pages.mjs",
     "pages:sync": "node scripts/sync-pages.mjs"
