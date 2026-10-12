@@ -343,5 +343,58 @@ test('historical pages survive a corrupt refresh and retain full prices and life
     assert.equal(fallback.reviewApproved, false);
     assert.match(fallback.researchProgress, /Refresh failed/);
     assert.equal(buildPages(workspace).publicAssessments, 1);
+
+    const repairPolicy = { ...policy, allow_best_effort_after_limit: true, block_best_effort_severities: ['critical', 'high'] };
+    fs.writeFileSync(path.join(workspace, '.agents', 'config', 'reviewer.json'), JSON.stringify(repairPolicy));
+    fs.writeFileSync(path.join(local, 'trip.json'), JSON.stringify(trip));
+    const repaired = structuredClone(draft);
+    repaired.browser.evidenceFiles = ['flight.txt', 'hotel.txt'];
+    const citation = { sources: ['https://example.com/place'], evidence: ['hotel.txt'] };
+    repaired.dossier.assessment = {
+      researchConfidence: { label: 'Moderate', rationale: 'Synthetic source coverage.', changeCondition: 'Verify fees.' },
+      itineraryConfidence: { label: 'Low', rationale: 'Holiday access uncertain.', changeCondition: 'Verify opening hours.' }
+    };
+    for (const candidate of repaired.candidates) {
+      candidate.ratings = {
+        value: { label: 'Conditional', rationale: 'Synthetic comparison.', comparison: 'Alternative has fewer transfers.', changeCondition: 'Verify transfers.' },
+        priceConfidence: { label: 'Observed snapshot', rationale: 'Synthetic observed prices.' }
+      };
+      candidate.costBasis = Object.fromEntries(Object.entries(candidate.costs).map(([key, amount]) => [key, {
+        basis: 'observed', calculation: `1 * ${amount}`, assumptions: 'Synthetic inclusive cost.', quantity: 1,
+        unitUsd: amount, adjustmentsUsd: 0, totalUsd: amount, ...citation
+      }]));
+    }
+    const memoTitles = ['My recommendation', 'Why this trip fits', 'How the trip unfolds', 'What it will really cost', 'Where this can go wrong', 'The best alternative'];
+    repaired.dossier.memo = { headline: 'Synthetic final repair', markdown: memoTitles.map(title => `## ${title}\n\n${'I would choose this because the days are walkable and the food is the point. '.repeat(20)}`).join('\n\n') };
+    repaired.dossier.entry = { steps: ['Check eligibility', 'Apply', 'Attend'], documents: ['Passport', 'Return ticket', 'Hotel confirmation'], mechanism: 'visa-free', requirement: 'Synthetic entry requirement.', leadTimeDays: 0, lastSafeApplyDate: null, feasibleByDepart: true, usVisaDependency: 'Valid US visa required', transit: 'No transit visa', fees: 'None', source: 'https://example.com/entry' };
+    repaired.dossier.lodging = ['Hotel A', 'Hotel B'].map(name => ({ name, area: 'Old town', tier: 'mid-range', whyHere: 'Walkable.', chaseTravel: 'unverified', chaseNote: 'Check public listing.', guestRating: { score: 8.9, scale: 10, source: 'Booking.com' }, nightlyUsd: 180, priceBasis: 'Synthetic public rate', sources: ['https://example.com/hotel'] }));
+    repaired.dossier.travelerVoices = ['https://example.com/a', 'https://other.example.org/b', 'https://third.example.net/c'].map(url => ({ author: 'Synthetic traveler', context: 'blog, 2025', takeaway: 'Go early.', url }));
+    for (const section of repaired.dossier.sections) {
+      section.observedAt = new Date().toISOString();
+      section.paragraphs = [{ text: section.text, ...citation }];
+    }
+    for (const day of repaired.dossier.itinerary) day.visits = [{ name: 'Gallery', significance: 'Local arts.', whyVisit: 'Cultural stop.', duration: 'Two hours', logistics: 'Verify holiday hours.', cost: 'Synthetic admission.', ...citation }];
+    repaired.dossier.actions = [{ priority: 'High', check: 'Verify fees', why: 'They affect value.', how: 'Check rate terms.', decisionImpact: 'Reject if total exceeds budget.' }];
+    repaired.summary = 'Final repairs after four independent review rounds';
+    fs.writeFileSync(path.join(run, 'draft.json'), JSON.stringify(repaired));
+    const repairedArtifact = readArtifact(local, path.join(run, 'draft.json'), applyReviewPolicy(config, repairPolicy), trip, { historicalPrices: true, requirePricingEffort: true });
+    record.status = 'awaiting_review';
+    record.artifact = { reportPath: artifact.reportPath, runDir: artifact.runDir, draftSha256: artifact.draftSha256, evidenceSha256: artifact.evidenceSha256 };
+    delete record.previousReport;
+    record.reviewRounds = Array.from({ length: 4 }, (_, index) => ({ round: index + 1, draftSha256: artifact.draftSha256, evidenceSha256: artifact.evidenceSha256 }));
+    fs.writeFileSync(path.join(local, 'research', 'state.json'), JSON.stringify(state));
+    fs.mkdirSync(path.join(run, 'review'), { recursive: true });
+    const repairState = { draftSha256: repairedArtifact.draftSha256, evidenceSha256: repairedArtifact.evidenceSha256,
+      validatorPassed: true, reasonCode: 'round_limit', reason: 'Four rounds exhausted; final repairs are unapproved', roundsCompleted: 4,
+      missingPasses: repairPolicy.passes, attempts: [{ status: 'revise', evidence: 'Synthetic review findings' }], unresolvedFindings: [] };
+    const repairStateFile = path.join(run, 'review', 'state.json');
+    fs.writeFileSync(repairStateFile, JSON.stringify(repairState));
+    const repairedPage = loadPublicDossier(workspace, trip, draft.destinationId);
+    assert.equal(repairedPage.reviewApproved, false);
+    assert.match(repairedPage.reviewStatus, /NOT APPROVED/);
+    fs.writeFileSync(repairStateFile, JSON.stringify({ ...repairState, evidenceSha256: 'stale' }));
+    assert.throws(() => loadPublicDossier(workspace, trip, draft.destinationId), /current validated hashes/);
+    fs.writeFileSync(repairStateFile, JSON.stringify({ ...repairState, unresolvedFindings: [{ severity: 'high', message: 'Unresolved safety defect' }] }));
+    assert.throws(() => loadPublicDossier(workspace, trip, draft.destinationId), /Critical\/high/);
   } finally { fs.rmSync(workspace, { recursive: true, force: true }); }
 });

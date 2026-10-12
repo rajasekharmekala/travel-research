@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { readArtifact, runFile } from './research-artifacts.mjs';
-import { applyReviewPolicy } from './review-policy.mjs';
+import { applyReviewPolicy, validateBestEffort } from './review-policy.mjs';
 import { pageShell, renderLifecycle } from './portal-view.mjs';
 import { loadPresentation } from './presentation.mjs';
 import { renderMarkdown, splitMemoTitle } from './memo.mjs';
@@ -234,12 +234,27 @@ function loadDossierSnapshot(workspace, trip, id, previousOnly = false) {
   };
   const config = applyReviewPolicy(settings, policy);
   const artifact = readArtifact(local, filename, config, trip, { historicalPrices: true, historicalResearch: true });
-  if (report.job !== 'destination' || report.destinationId !== id || artifact.draftSha256 !== reference.draftSha256 || artifact.evidenceSha256 !== reference.evidenceSha256) {
+  const reviewFile = path.join(path.dirname(filename), 'review/state.json');
+  const review = fs.existsSync(reviewFile) ? read(reviewFile) : null;
+  const checkpointMatches = artifact.draftSha256 === reference.draftSha256 && artifact.evidenceSha256 === reference.evidenceSha256;
+  let postCapRepair = false;
+  if (!checkpointMatches && !previousOnly && reference === record.artifact && record.status === 'awaiting_review'
+    && artifact.evidenceSha256 === reference.evidenceSha256 && record.reviewRounds?.length === policy.max_rounds
+    && record.reviewRounds.every((round, index) => round.round === index + 1)
+    && record.reviewRounds.at(-1).draftSha256 === reference.draftSha256
+    && record.reviewRounds.at(-1).evidenceSha256 === reference.evidenceSha256
+    && review?.reasonCode === 'round_limit') {
+    readArtifact(local, filename, config, trip, { historicalPrices: true, requirePricingEffort: true });
+    validateBestEffort(review, policy, artifact.draftSha256, artifact.evidenceSha256);
+    postCapRepair = true;
+  }
+  if (report.job !== 'destination' || report.destinationId !== id || (!checkpointMatches && !postCapRepair)) {
     throw new Error('Public dossier requires a matching validated checkpoint');
   }
   let reviewApproved = false;
   let reviewStatus = 'Provisional: independent review is incomplete or did not approve this draft.';
   try {
+    if (postCapRepair) throw new Error('Post-cap repairs are not independently approved');
     readArtifact(local, filename, config, trip, { reviewed: true, historicalPrices: true });
     reviewApproved = true;
     reviewStatus = 'Four independent passes approved the source draft. Approval is not booking readiness.';
@@ -253,8 +268,6 @@ function loadDossierSnapshot(workspace, trip, id, previousOnly = false) {
     sectionKeys: report.dossier.sections.map(section => section.key),
     mediaDirectory: path.join(local, 'portal', 'media')
   });
-  const reviewFile = path.join(path.dirname(filename), 'review/state.json');
-  const review = fs.existsSync(reviewFile) ? read(reviewFile) : null;
   const matchingReview = review?.draftSha256 === artifact.draftSha256 && review?.evidenceSha256 === artifact.evidenceSha256;
   if (!reviewApproved && matchingReview) {
     const attempts = record.reviewRounds?.filter(round => round.draftSha256 === artifact.draftSha256 && round.evidenceSha256 === artifact.evidenceSha256).flatMap(round => round.attempts ?? []) ?? [];
@@ -262,6 +275,7 @@ function loadDossierSnapshot(workspace, trip, id, previousOnly = false) {
     else if (attempts.some(attempt => attempt.status === 'unavailable')) reviewStatus = 'Unavailable: one or more independent AI review passes could not run.';
     else reviewStatus = 'Pending: independent AI approval for this draft is not verified.';
   }
+  if (postCapRepair) reviewStatus = 'NOT APPROVED: four review rounds completed; final repairs have not received independent approval.';
   const findings = review?.draftSha256 === artifact.draftSha256 && review?.evidenceSha256 === artifact.evidenceSha256
     ? (review.unresolvedFindings ?? []).map(finding => finding.message)
     : [];
