@@ -10,7 +10,7 @@ const runGit = (...args) => execFileSync('git', args, { cwd: root, encoding: 'ut
 export function syncPages(repository = root) {
   const git = (...args) => execFileSync('git', args, { cwd: repository, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
   if (git('branch', '--show-current') !== 'main') throw new Error('Pages sync is allowed only from main');
-  if (!git('remote', 'get-url', 'origin').endsWith('mereddy/travel-search.git')) throw new Error('Pages sync remote does not match the configured repository');
+  if (!git('remote', 'get-url', 'origin').endsWith('rajasekharmekala/travel-research.git')) throw new Error('Pages sync remote does not match the configured repository');
   const lock = path.join(repository, '.git', 'pages-sync.lock');
   try { mkdirSync(lock); } catch (error) {
     if (error.code === 'EEXIST') throw new Error('A Pages sync is already running; retry after it completes');

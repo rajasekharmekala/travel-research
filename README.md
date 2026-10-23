@@ -142,7 +142,7 @@ The public site is generated in `docs/` and served from `main:/docs`. Every `npm
 
 The public site automatically includes validated destination research through the privacy-safe projection, including provisional reviews and estimate-only options. Personal dates, home airports, document/employment assessments, budgets, party costs, booking evidence, reviewer internals and raw private artifacts stay excluded. Standing user authorization replaces per-run public-release approval. Publishing does not grant clean reviewer approval or booking readiness.
 
-The Pages source is `main:/docs`. The corporate Pages API reports `built` at https://git.corp.adobe.com/pages/mereddy/travel-search/; unauthenticated requests redirect to Adobe Okta.
+The Pages source is `main:/docs`, published at https://rajasekharmekala.github.io/travel-research/.
 
 ## Research Publication Contract
 

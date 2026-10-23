@@ -12,7 +12,7 @@ const git = (cwd, ...args) => execFileSync('git', args, { cwd, encoding: 'utf8',
 test('Pages sync rebuilds sanitized docs, pushes docs-only commits, and preserves unrelated staging', () => {
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'travel-pages-sync-'));
   const repository = path.join(temp, 'worktree');
-  const remote = path.join(temp, 'mereddy/travel-search.git');
+  const remote = path.join(temp, 'rajasekharmekala/travel-research.git');
   try {
     fs.mkdirSync(path.join(repository, 'local'), { recursive: true });
     fs.mkdirSync(path.dirname(remote), { recursive: true });
